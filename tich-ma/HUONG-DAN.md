@@ -7,16 +7,18 @@
 
 Mỗi mã chỉ dùng được 1 lần. Hệ thống chặn mã nhập trùng, mã đã đổi và mã hết hạn.
 
-## Cài đặt (khoảng 10 phút, làm 1 lần)
+## Cài đặt (khoảng 5 phút, làm 1 lần, nên làm trên máy tính)
 
-1. **Tạo Google Sheet** mới, ví dụ tên "Tich ma nhom Zalo".
-2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa code mặc định, dán toàn bộ nội dung `tich-ma/apps-script/Code.gs`, bấm Lưu.
-   - Chọn hàm `caiDat` → bấm **Chạy** (cho phép quyền truy cập) → Sheet sẽ có 2 tab `ma_tich_diem` và `cau_hinh`.
-   - **Cài đặt dự án (bánh răng) → Thuộc tính tập lệnh → Thêm**: khóa `PIN_NHAN_VIEN`, giá trị là mật khẩu cho nhân viên (ví dụ 6 số).
-3. **Triển khai → Tùy chọn triển khai mới → Ứng dụng web**:
-   - Thực thi với tư cách: **Tôi**; Người có quyền truy cập: **Bất kỳ ai**.
-   - Sao chép URL dạng `https://script.google.com/macros/s/.../exec`.
-4. Mở `tich-ma/config.js`, dán URL đó vào `window.TICH_MA_API = '...'`, lưu và đưa web lên (commit/push).
+Phần này cần đăng nhập tài khoản Google của chủ quán nên phải tự làm:
+
+1. Mở https://sheets.new để tạo Google Sheet mới, đặt tên ví dụ "Tich ma nhom Zalo".
+2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa code mặc định, dán toàn bộ `tich-ma/apps-script/Code.gs`, bấm 💾 Lưu.
+3. Ở thanh trên chọn hàm **caiDat** → bấm **▶ Chạy** → cho phép quyền truy cập (nếu Google báo "chưa xác minh": Nâng cao → Đi tới dự án).
+   Nhật ký thực thi hiện **Mật khẩu nhân viên: xxxxxx** – ghi lại mật khẩu này.
+4. **Triển khai → Tùy chọn triển khai mới →** (bánh răng) **Ứng dụng web**: Thực thi với tư cách **Tôi**, Người có quyền truy cập **Bất kỳ ai** → Triển khai → sao chép URL `https://script.google.com/macros/s/.../exec`.
+5. Dán URL vào `tich-ma/config.js` (`window.TICH_MA_API = '...'`) hoặc gửi URL cho Claude để Claude điền và push.
+
+Đổi mật khẩu nhân viên: Cài đặt dự án (bánh răng) → Thuộc tính tập lệnh → sửa `PIN_NHAN_VIEN`.
 
 > Sửa `Code.gs` sau này: phải **Triển khai → Quản lý triển khai → Chỉnh sửa → Phiên bản mới** thì thay đổi mới có hiệu lực.
 

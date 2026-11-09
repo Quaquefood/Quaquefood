@@ -297,4 +297,13 @@ function caiDat() {
     CAU_HINH_MAC_DINH.forEach(function (r) { shCh.appendRow(r); });
     shCh.setFrozenRows(1);
   }
+  // Tự tạo mật khẩu nhân viên 6 số nếu chưa có
+  var props = PropertiesService.getScriptProperties();
+  var pin = props.getProperty('PIN_NHAN_VIEN');
+  if (!pin) {
+    pin = String(Math.floor(100000 + Math.random() * 900000));
+    props.setProperty('PIN_NHAN_VIEN', pin);
+  }
+  Logger.log('Đã cài đặt xong. Mật khẩu nhân viên: ' + pin);
+  return pin;
 }
