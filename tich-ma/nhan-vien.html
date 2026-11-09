@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tích mã – Nhân viên</title>
+    <link rel="stylesheet" href="tich-ma.css">
+</head>
+<body>
+<header>
+    <h1>Tích mã nhóm Zalo – Nhân viên</h1>
+</header>
+<main>
+    <!-- Đăng nhập -->
+    <section id="dangNhap" class="the">
+        <label for="pin">Mật khẩu nhân viên</label>
+        <input id="pin" type="password" autocomplete="current-password">
+        <button id="btnDangNhap">Vào</button>
+        <p id="kqDangNhap"></p>
+    </section>
+
+    <div id="khuLamViec" class="an">
+        <div class="tabs">
+            <button data-tab="tabCap" class="chon">Cấp mã</button>
+            <button data-tab="tabDoi">Đổi thưởng</button>
+            <button data-tab="tabTra">Tra cứu</button>
+        </div>
+
+        <!-- Cấp mã -->
+        <section id="tabCap" class="the">
+            <p class="goi-y">Chỉ cấp cho <b>thành viên nhóm Zalo</b> của quán, mỗi lần mua cấp 1 mã.</p>
+            <label for="capSdt">Số điện thoại khách *</label>
+            <input id="capSdt" type="tel" inputmode="numeric" placeholder="0907754132">
+            <label for="capTen">Tên Zalo của khách</label>
+            <input id="capTen" type="text" placeholder="Không bắt buộc">
+            <label for="capTien">Số tiền hóa đơn (đồng)</label>
+            <input id="capTien" type="text" inputmode="numeric" placeholder="Không bắt buộc">
+            <label><input id="capXacNhan" type="checkbox" style="width:auto"> Đã kiểm tra khách là thành viên nhóm Zalo</label>
+            <button id="btnCap">Cấp mã</button>
+            <div id="kqCap"></div>
+        </section>
+
+        <!-- Đổi thưởng -->
+        <section id="tabDoi" class="the an">
+            <p class="goi-y">Đổi theo SĐT (tự lấy các mã cũ nhất còn hạn) <b>hoặc</b> nhập các mã khách đưa.</p>
+            <label for="doiSdt">Số điện thoại khách</label>
+            <input id="doiSdt" type="tel" inputmode="numeric">
+            <label for="doiMa">… hoặc các mã khách đưa (cách nhau bằng dấu phẩy / xuống dòng)</label>
+            <textarea id="doiMa" placeholder="QF-7K3QX, QF-M2PZA, ..."></textarea>
+            <button id="btnDoi">Đổi thưởng</button>
+            <div id="kqDoi"></div>
+        </section>
+
+        <!-- Tra cứu -->
+        <section id="tabTra" class="the an">
+            <label for="traSdt">Số điện thoại khách</label>
+            <input id="traSdt" type="tel" inputmode="numeric">
+            <button id="btnTra">Tra cứu</button>
+            <div id="kqTra"></div>
+        </section>
+
+        <button id="btnThoat" class="phu">Đăng xuất</button>
+    </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let pin = '';
+try { pin = sessionStorage.getItem('tichma_pin') || ''; } catch (e) { /* bỏ qua */ }
+
+function hienLoi(el, err) { el.innerHTML = '<p class="loi">' + esc(err.message || err) + '</p>'; }
+
+async function chay(nut, el, fn) {
+    nut.disabled = true;
+    el.innerHTML = '<p class="goi-y">Đang xử lý…</p>';
+    try { await fn(); } catch (err) { hienLoi(el, err); } finally { nut.disabled = false; }
+}
+
+function hopTinNhan(tin) {
+    return '<p><b>Tin nhắn gửi khách qua Zalo:</b></p><div class="tin">' + esc(tin) + '</div>' +
+        '<button class="phu" onclick="saoChep(this)" data-tin="' + esc(tin) + '">Sao chép tin nhắn</button>';
+}
+
+window.saoChep = async function (nut) {
+    try { await navigator.clipboard.writeText(nut.dataset.tin); nut.textContent = 'Đã sao chép ✓'; }
+    catch (e) { nut.textContent = 'Không sao chép được – hãy bôi đen để chép'; }
+};
+
+function thanhTienDo(so, can) {
+    const pt = Math.min(100, Math.round(so / can * 100));
+    return '<div class="thanh"><div style="width:' + pt + '%"></div></div>';
+}
+
+function bangMa(ds) {
+    if (!ds || !ds.length) return '<p class="goi-y">Chưa có mã nào còn hạn.</p>';
+    return '<table><tr><th>Mã</th><th>Ngày cấp</th><th>Hết hạn</th></tr>' +
+        ds.map((x) => '<tr><td>' + esc(x.ma) + '</td><td>' + esc(x.ngay_cap) + '</td><td>' + esc(x.het_han || '—') + '</td></tr>').join('') +
+        '</table>';
+}
+
+function vaoLamViec() { $('dangNhap').classList.add('an'); $('khuLamViec').classList.remove('an'); }
+
+$('btnDangNhap').onclick = () => chay($('btnDangNhap'), $('kqDangNhap'), async () => {
+    const p = $('pin').value.trim();
+    await goiApi({ action: 'kiem_pin', pin: p }, true);
+    pin = p;
+    try { sessionStorage.setItem('tichma_pin', p); } catch (e) { /* bỏ qua */ }
+    $('kqDangNhap').innerHTML = '';
+    vaoLamViec();
+});
+if (pin) vaoLamViec();
+
+$('btnThoat').onclick = () => {
+    pin = '';
+    try { sessionStorage.removeItem('tichma_pin'); } catch (e) { /* bỏ qua */ }
+    location.reload();
+};
+
+document.querySelectorAll('.tabs button').forEach((b) => {
+    b.onclick = () => {
+        document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('chon', x === b));
+        ['tabCap', 'tabDoi', 'tabTra'].forEach((t) => $(t).classList.toggle('an', t !== b.dataset.tab));
+    };
+});
+
+$('btnCap').onclick = () => chay($('btnCap'), $('kqCap'), async () => {
+    if (!$('capXacNhan').checked) throw new Error('Hãy kiểm tra khách có trong nhóm Zalo rồi đánh dấu ô xác nhận.');
+    const kq = await goiApi({ action: 'cap_ma', pin, sdt: $('capSdt').value, ten: $('capTen').value, so_tien: $('capTien').value }, true);
+    $('kqCap').innerHTML =
+        '<p class="ok">Đã cấp mã:</p><div class="ma-lon">' + esc(kq.ma_moi) + '</div>' +
+        '<p>Khách đang có <b>' + kq.so_ma + '/' + kq.so_ma_doi + '</b> mã.' + (kq.du_doi ? ' <span class="ok">🎉 Đủ điều kiện đổi thưởng!</span>' : '') + '</p>' +
+        thanhTienDo(kq.so_ma, kq.so_ma_doi) + hopTinNhan(kq.tin_nhan);
+    $('capTien').value = '';
+    $('capXacNhan').checked = false;
+});
+
+$('btnDoi').onclick = () => chay($('btnDoi'), $('kqDoi'), async () => {
+    const maList = $('doiMa').value.trim();
+    const sdt = $('doiSdt').value.trim();
+    if (!maList && !sdt) throw new Error('Nhập SĐT hoặc danh sách mã.');
+    const thamSo = { action: 'doi_thuong', pin };
+    if (maList) thamSo.ma_list = maList; else thamSo.sdt = sdt;
+    const kq = await goiApi(thamSo, true);
+    $('kqDoi').innerHTML =
+        '<p class="ok">Đổi thưởng thành công!</p><div class="ma-lon">' + esc(kq.ma_doi_thuong) + '</div>' +
+        '<p>Khuyến mãi áp dụng: <b>' + esc(kq.phan_thuong) + '</b></p>' +
+        '<p class="goi-y">Đã dùng: ' + esc(kq.ma_da_dung.join(', ')) + ' · Khách còn ' + kq.so_ma_con_lai + ' mã.</p>' +
+        hopTinNhan(kq.tin_nhan);
+    $('doiMa').value = '';
+});
+
+$('btnTra').onclick = () => chay($('btnTra'), $('kqTra'), async () => {
+    const kq = await goiApi({ action: 'nv_tra_cuu', pin, sdt: $('traSdt').value }, true);
+    $('kqTra').innerHTML =
+        '<p><b>' + esc(kq.ten || 'Khách') + '</b> – ' + esc(kq.sdt) + '</p>' +
+        '<p>Còn <b>' + kq.so_ma + '/' + kq.so_ma_doi + '</b> mã' + (kq.du_doi ? ' – <span class="ok">đủ đổi thưởng</span>' : '') +
+        ' · Đã đổi ' + kq.so_lan_da_doi + ' lần · ' + kq.so_ma_het_han + ' mã hết hạn.</p>' +
+        thanhTienDo(kq.so_ma, kq.so_ma_doi) + bangMa(kq.danh_sach);
+});
+</script>
+</body>
+</html>

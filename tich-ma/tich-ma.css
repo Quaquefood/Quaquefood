@@ -1,0 +1,28 @@
+:root { --chinh: #2f7d32; --chinh-dam: #1f5a22; --nen: #f4f4f4; --the: #fff; --vien: #ddd; --chu: #222; --phu: #666; --loi: #c62828; }
+* { box-sizing: border-box; }
+body { font-family: Arial, sans-serif; margin: 0; background: var(--nen); color: var(--chu); }
+header { background: #333; color: #fff; padding: 1rem; text-align: center; }
+header h1 { margin: 0; font-size: 1.4rem; }
+header a { color: #fff; }
+main { max-width: 560px; margin: 0 auto; padding: 1rem; }
+.the { background: var(--the); border: 1px solid var(--vien); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+label { display: block; font-weight: bold; margin: .6rem 0 .25rem; }
+input, textarea { width: 100%; padding: .6rem; font-size: 1rem; border: 1px solid #bbb; border-radius: 6px; }
+textarea { min-height: 5rem; }
+button { background: var(--chinh); color: #fff; border: 0; border-radius: 6px; padding: .7rem 1rem; font-size: 1rem; cursor: pointer; margin-top: .8rem; }
+button:hover { background: var(--chinh-dam); }
+button.phu { background: #777; }
+button:disabled { opacity: .6; cursor: wait; }
+.tabs { display: flex; gap: .4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tabs button { flex: 1; margin: 0; background: #999; }
+.tabs button.chon { background: var(--chinh); }
+.an { display: none; }
+.loi { color: var(--loi); font-weight: bold; }
+.ok { color: var(--chinh-dam); font-weight: bold; }
+.goi-y { color: var(--phu); font-size: .9rem; }
+.thanh { background: #e0e0e0; border-radius: 99px; height: 14px; overflow: hidden; margin: .5rem 0; }
+.thanh > div { background: var(--chinh); height: 100%; }
+.ma-lon { font-size: 1.8rem; letter-spacing: .15rem; font-weight: bold; text-align: center; margin: .5rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+td, th { border-bottom: 1px solid var(--vien); padding: .35rem; text-align: left; }
+.tin { white-space: pre-wrap; background: #f1f8e9; border: 1px dashed var(--chinh); padding: .6rem; border-radius: 6px; }
