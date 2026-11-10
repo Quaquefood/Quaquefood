@@ -396,6 +396,25 @@ function ngayKey_(d) { return fmt_(d, 'yyyy-MM-dd'); }
 
 /* ============================ CÀI ĐẶT ============================ */
 
+/** Menu "🎁 Tích mã" trên Google Sheet (tự hiện mỗi khi mở Sheet). */
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('🎁 Tích mã')
+    .addItem('Cài đặt & xem mật khẩu', 'menuXemMatKhau')
+    .addItem('Xem link trang web', 'menuXemLink')
+    .addToUi();
+}
+
+function menuXemMatKhau() {
+  SpreadsheetApp.getUi().alert('Tích mã', caiDat(), SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function menuXemLink() {
+  var u = urlApp_();
+  SpreadsheetApp.getUi().alert('Link trang web', u
+    ? 'Đăng ký (ghim nhóm Zalo): ' + u + '\n\nNhân viên: ' + u + '?p=nv\n\nChủ quán: ' + u + '?p=chu'
+    : 'Chưa triển khai. Vào Apps Script → Triển khai → Tùy chọn triển khai mới → Ứng dụng web.', SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
 /** Chạy 1 lần: tạo các tab và mật khẩu. Chạy lại không mất dữ liệu, không đổi mật khẩu cũ. */
 function caiDat() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
