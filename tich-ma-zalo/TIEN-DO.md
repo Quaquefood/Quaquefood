@@ -78,6 +78,14 @@ Kiểm tra bắt buộc trước khi vá gateway:
 3. `test/kiem-tra-gateway.js`: TICHMA_ON=0 vẫn y hệt bản gốc.
 4. Sau khi vá: chạy đủ bộ hồi quy cũ 108 bước.
 
+### ⚠ GATEWAY TRÊN VPS ĐÃ THAY ĐỔI (10/11 17:13 VN) – phần KẾT BẠN
+Phiên Code đã lắp phần kết bạn vào zalo-gateway, theo yêu cầu riêng của chủ hệ thống (workflow n8n kết bạn do phiên chat làm).
+- Sao lưu bản trước: `/opt/zalo-n8n-stack/zalo-gateway/index.js.bak-ketban-20261110-1013`. Bản trước đó = `gateway/goc/index.js` (đã so hash).
+- Bản đang chạy = `va-ketban.js` áp lên goc. Trong repo: `gateway/va-ketban.js`, `gateway/index-ketban-dang-chay.js` (bản đang chạy trên VPS), test `test/kiem-tra-ketban.js`.
+- Chi tiết định dạng: skill bot-zalo-nhi-nhi, mục zalo-gateway.
+- **VÁ TÍCH MÃ: phải áp lên `gateway/index-ketban-dang-chay.js`, KHÔNG áp lên goc/index.js** (nếu không sẽ mất phần kết bạn). Sửa `va-gateway.js` đọc file này. Chạy lại cả `kiem-tra-gateway.js` và `kiem-tra-ketban.js`.
+- Triển khai không dùng `--build`: dùng `docker cp` vào /app + `docker compose restart zalo-gateway` (giữ zca-js 2.2.0). Có thể dùng lại cách trong `Downloads\trien-khai-ketban.sh`.
+
 ### Việc tiếp (sau 15:00 ngày 11/11)
 0. Làm yêu cầu ĐỔI QUÀ và yêu cầu 2 ở trên (sửa logic + snippet gateway, test, PATCH workflow TICH MA, sinh lại `gateway/index.js`) TRƯỚC khi vá gateway.
 1. Chủ quán xác nhận nhóm `5606409292553201202` và ID chủ quán/nhân viên, rồi điền `cau_hinh` (`nguoi_duyet`, `ten_nguoi_duyet`).
