@@ -52,7 +52,20 @@ Cách sửa (chỉ trong Sheet, KHÔNG sửa workflow):
 - Chạy lại `kiem-tra-that.paste.js`: **7/7 OK** (id `test-tm-1794284444879`). `khach_hang` không còn bị ghi cột F. Đã xóa dòng thử, `bat_chuc_nang` = TAT.
 - `logic.js` không đọc `so_ma_con`. Bảng cột `khach_hang` trong KE-HOACH giờ là: zalo_id, ten_zalo, lan_dau, trang_thai, ghi_chu (không còn so_ma_con).
 
+### ✍ YÊU CẦU MỚI CỦA CHỦ QUÁN – ĐỔI QUÀ (chốt 10/11, làm TRƯỚC khi vá gateway)
+Vấn đề: tin "✅ QUÀ HỢP LỆ" nằm lại trong Zalo của khách → lần sau khách đưa tin cũ hoặc ảnh chụp ra. Lúc quán đông, người bán không kịp tra Sheet.
+Cách đã chốt:
+- Khách tại quầy nhắn "đổi quà". Bot tự đối chiếu mã trong Sheet.
+- **Hợp lệ:** trừ 3 mã, ghi `doi_qua`. Bot **đăng vào NHÓM KHÁCH** (`5606409292553201202`, có tag khách): "🎉 Chúc mừng @Tên đã đổi quà <qua_tang>! (HH:mm)", kèm mã quà nếu cần. Đồng thời nhắn riêng khách xác nhận ngắn.
+- **Không hợp lệ** (chưa đủ mã / mã đã dùng): **chỉ nhắn riêng** khách (vd "mã đã dùng lúc… / mới có n/3 mã"), **KHÔNG đăng nhóm** (tránh làm khách ngại).
+- Quy tắc cho người bán: **"Chỉ đưa quà khi thấy tin 🎉 chúc mừng MỚI của bot trong nhóm khách."** Không tin màn hình khách.
+- Đổi quà KHÔNG cần thả tim duyệt (đã bàn và bỏ, để nhanh lúc đông khách).
+- Chưa chốt: có thu hồi (undo) 3 tin mã cũ trong Zalo khách sau khi đổi không. Cách này cần gateway trả `cliMsgId` + thêm `/undo`, và Zalo có giới hạn thời gian thu hồi. Mặc định: KHÔNG làm.
+Việc cần sửa: `logic.js` (nhánh `doi_qua`: thêm tin `den:'group'` có mentions khi hợp lệ, tin không hợp lệ chỉ gửi riêng), test `kiem-tra.js` + `kiem-tra-n8n.js` + `kiem-tra-that.paste.js` (thêm bước đổi quà đủ 3 mã → có tin nhóm; đổi lần 2 → không có tin nhóm), build lại, PATCH node "Xu ly" của `iMSooaBPyj7B9XS2` (workflow TICH MA, được phép sửa).
+Các câu đã hỏi nhưng chủ quán CHƯA trả lời (mặc định giữ như code hiện tại): chỉ nhận ❤️ hay mọi cảm xúc (hiện: mọi cảm xúc); bắt buộc khách là thành viên nhóm (hiện: không); mã có hạn dùng (hiện: không, `han_ma_ngay=0`); quán tự kiểm bill 30K (hiện: có); thời hạn duyệt 30 phút, 1 mã/ngày (hiện: giữ).
+
 ### Việc tiếp (sau 15:00 ngày 11/11)
+0. Làm yêu cầu ĐỔI QUÀ ở trên (sửa logic, test, PATCH workflow TICH MA) TRƯỚC khi vá gateway.
 1. Chủ quán xác nhận nhóm `5606409292553201202` và ID chủ quán/nhân viên, rồi điền `cau_hinh` (`nguoi_duyet`, `ten_nguoi_duyet`).
 2. (Lỗi cột F đã sửa xong.) Khi chạy lại `kiem-tra-that.paste.js`: bật `bat_chuc_nang=BAT` trước khi chạy, trả về TAT sau khi chạy, rồi xóa các dòng `test-`.
 3. Vá gateway (mục "Lắp lên VPS" bên dưới), sao lưu trước, rồi chạy đủ bộ hồi quy cũ (108 bước).
