@@ -64,8 +64,22 @@ Cách đã chốt:
 Việc cần sửa: `logic.js` (nhánh `doi_qua`: thêm tin `den:'group'` có mentions khi hợp lệ, tin không hợp lệ chỉ gửi riêng), test `kiem-tra.js` + `kiem-tra-n8n.js` + `kiem-tra-that.paste.js` (thêm bước đổi quà đủ 3 mã → có tin nhóm; đổi lần 2 → không có tin nhóm), build lại, PATCH node "Xu ly" của `iMSooaBPyj7B9XS2` (workflow TICH MA, được phép sửa).
 Các câu đã hỏi nhưng chủ quán CHƯA trả lời (mặc định giữ như code hiện tại): chỉ nhận ❤️ hay mọi cảm xúc (hiện: mọi cảm xúc); bắt buộc khách là thành viên nhóm (hiện: không); mã có hạn dùng (hiện: không, `han_ma_ngay=0`); quán tự kiểm bill 30K (hiện: có); thời hạn duyệt 30 phút, 1 mã/ngày (hiện: giữ).
 
+### ✍ YÊU CẦU MỚI 2 – NHẬN CẢ CÂU NÓI VÒNG (cách a, chốt 10/11)
+Vấn đề: hiện chỉ tin **bắt đầu bằng** từ khóa mới sang tích mã. "cho mình tích mã với" hay "tích điểm sao bạn" rơi về bot bán hàng, mà bot này không biết chương trình.
+Chủ quán yêu cầu: **KHÔNG được ảnh hưởng chức năng tư vấn bán hàng.** Không sửa workflow cũ, không sửa Sheet của bot cũ.
+Quy tắc mới (chép GIỐNG HỆT vào `logic.js` `nenChuyenTichMa` + `loaiTin` VÀ `gateway/tichma-snippet.js`; lệch nhau thì khách nhắn mà không ai trả lời):
+- Giữ quy tắc cũ: tin chat riêng **bắt đầu bằng** từ khóa → tích mã.
+- Thêm: tin chat riêng **ngắn** (sau khi bỏ dấu ≤ 30 ký tự) **có chứa** cụm `tich ma`, `tich diem`, `doi qua`, `ma cua toi` ở bất kỳ đâu → tích mã.
+- NGOẠI LỆ, luôn về bot bán hàng: tin có mã món (`\bm\s?\d{1,2}\b`, vd M14), có số điện thoại (≥ 9 chữ số liền), có ảnh/sticker/danh thiếp, tin nhóm.
+- Từ khóa nhập nhằng (`doi ma`, `so ma`, `xem ma`, `kiem tra ma`, `nhan qua`) chỉ tính khi **đứng đầu tin**, như hiện tại.
+Kiểm tra bắt buộc trước khi vá gateway:
+1. Test đơn vị: các câu "cho mình tích mã với", "tích điểm sao bạn", "mình muốn đổi quà" → tích mã; "M14 tích điểm được ko", "0907754132 tích mã" → bot bán hàng.
+2. **Chạy MỌI tin trong bộ hồi quy cũ (mục 8 skill)** qua hàm chia đường: không tin nào được sang tích mã (gồm hi, 1, M14, 3 phần, địa chỉ, "Hôm qua mua bánh bị thiếu tóp mỡ", "Món nào ăn chay dc", "Muon mua them"…).
+3. `test/kiem-tra-gateway.js`: TICHMA_ON=0 vẫn y hệt bản gốc.
+4. Sau khi vá: chạy đủ bộ hồi quy cũ 108 bước.
+
 ### Việc tiếp (sau 15:00 ngày 11/11)
-0. Làm yêu cầu ĐỔI QUÀ ở trên (sửa logic, test, PATCH workflow TICH MA) TRƯỚC khi vá gateway.
+0. Làm yêu cầu ĐỔI QUÀ và yêu cầu 2 ở trên (sửa logic + snippet gateway, test, PATCH workflow TICH MA, sinh lại `gateway/index.js`) TRƯỚC khi vá gateway.
 1. Chủ quán xác nhận nhóm `5606409292553201202` và ID chủ quán/nhân viên, rồi điền `cau_hinh` (`nguoi_duyet`, `ten_nguoi_duyet`).
 2. (Lỗi cột F đã sửa xong.) Khi chạy lại `kiem-tra-that.paste.js`: bật `bat_chuc_nang=BAT` trước khi chạy, trả về TAT sau khi chạy, rồi xóa các dòng `test-`.
 3. Vá gateway (mục "Lắp lên VPS" bên dưới), sao lưu trước, rồi chạy đủ bộ hồi quy cũ (108 bước).
