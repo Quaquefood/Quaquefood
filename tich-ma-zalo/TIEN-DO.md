@@ -1,6 +1,61 @@
 # Tích mã – tiến độ lắp đặt
 
-Cập nhật 10/11/2026. Làm theo `KE-HOACH.md`. Chưa đụng tới n8n, gateway hay bot đang chạy.
+Cập nhật 10/11/2026 (chiều, phiên có trình duyệt). Làm theo `KE-HOACH.md`.
+
+## ▶ PHIÊN 10/11 CHIỀU – ĐÃ LÀM (đọc mục này trước)
+
+Phạm vi theo chủ quán: chỉ tạo 2 workflow và chạy `kiem-tra-that.paste.js`. **CHƯA đụng gateway, CHƯA chạy bộ hồi quy cũ.** Phần còn lại làm sau 15:00 ngày 11/11/2026. Không sửa, tắt hay xóa workflow cũ nào.
+
+**Workflow mới (đang ACTIVE):**
+
+| Tên | ID |
+|---|---|
+| `TICH MA - Nhan su kien` (POST `/webhook/tich-ma`) | `iMSooaBPyj7B9XS2` |
+| `TICH MA - Quet qua han` (5 phút/lần) | `INiudIHltr4pX3NV` |
+
+Bot cũ không bị ảnh hưởng: gateway chưa chuyển sự kiện nào sang `/webhook/tich-ma`.
+
+**Bước 1 (chỉ đọc, từ execution thật 10/11 09:50–10:22 giờ VN, workflow chính):**
+- Tên trường reaction nhóm đã ĐÚNG như code: `raw.data.uidFrom`, `raw.data.content.rMsg[0].gMsgID`, `raw.threadId`, `raw.isGroup=true`. Lưu ý: `gMsgID` là **số** (vd `8471340294372`), code đã so sánh bằng `String()` nên không sao.
+- Nhóm khách hàng: **`5606409292553201202`**. ✅ ĐÃ XÁC NHẬN 10/11 11:39 giờ VN: chủ hệ thống nhắn "Hóng." vào nhóm khách → execution có threadId này. Đã điền `cau_hinh!B11`. (Nhóm `5563765501687455177` là nhóm khác của "Hiệp Assistant", KHÔNG dùng.)
+- Nick "Trần Đại Hiệp" (chủ hệ thống) có ID **`4215278939136353152`**, giống nhau ở cả nhóm lẫn chat riêng. Như vậy ID Zalo không đổi theo ngữ cảnh.
+- `cau_hinh` hiện tại: `nguoi_duyet` = `306769430050266425;4215278939136353152`, `ten_nguoi_duyet` = `Chủ quán;Trần Đại Hiệp` (chủ hệ thống xác nhận Trần Đại Hiệp được duyệt, 10/11). Chủ quán cần **3 người duyệt**, còn thiếu ID người khác (đã nhờ "Bảo Trân" và nick "Bánh Tráng Nhi Nhi" trong nhóm `1322697685107634084` nhắn cho bot, đến 11:47 chưa thấy tin). Chưa rõ có giữ `306769430050266425` không.
+- Lấy ID: tin của chính nick bot gửi đi KHÔNG tới n8n (gateway `selfListen:false`, `if (m.isSelf) return`). Người cần lấy ID phải tự nhắn cho nick bot **"Bánh Tráng Nhi Nhi Lái Thiêu"** (nhắn riêng hoặc tag bot trong nhóm), rồi đọc `fromId` + `fromName` ở execution của workflow chính `kUbBNgPV55En8gbH`.
+- Nhóm `1322697685107634084`: nhóm nội bộ có chủ hệ thống, Bảo Trân, Bánh Tráng Nhi Nhi và bot (không phải nhóm khách).
+- Chạy lại `kiem-tra-that.paste.js` với `NGUOI_DUYET = '4215278939136353152'` (10/11 11:54): **7/7 OK**, `ma_tich` ghi người duyệt "Trần Đại Hiệp". Đã xóa dòng thử, `bat_chuc_nang` = TAT.
+- Khi gateway bật TICHMA_ON: `TICHMA_APPROVERS` phải trùng với `nguoi_duyet` (cách nhau dấu phẩy).
+- 2 nick đã thả ❤️ trong nhóm đó: **`795750324388112116`** (thả 1 lần) và **`7997260400133550852`** (thả 3 lần). ⚠ **Chưa biết ai là chủ quán, ai là nhân viên.** Chưa thêm vào `nguoi_duyet` (hiện chỉ có `306769430050266425`). Lưu ý: nick "Trần Đại Hiệp" nhắn riêng với bot có ID `4215278939136353152`. Cả 3 ID này đều khác `306769430050266425` → cần hỏi chủ quán `nguoi_duyet` đúng là ID nào. Cách chắc nhất: chủ quán và nhân viên mỗi người thả tim 1 tin trong nhóm, ghi giờ thả, rồi đối chiếu `uidFrom` theo giờ.
+- Node Google Sheets ở Luồng 2: typeVersion **4.5**, có `columns.matchingColumns` và `options.cellFormat`.
+
+**Sửa trong lúc tạo:** n8n không cho activate vì node Sheets thiếu `parameters.authentication = 'serviceAccount'`. Đã thêm tham số này vào 2 workflow TICH MA (PATCH chỉ 2 workflow mới), và sửa `n8n/build.js` để lần sau script tự chép (đã chạy lại build + `kiem-tra-n8n.js`: 12/12 OK).
+
+**Kết quả `kiem-tra-that.paste.js` trên n8n thật: 7/7 OK** (id thử `test-tm-1794283812142`). Ghi Sheet chạy được nghĩa là Sheet đã chia sẻ đúng cho service account.
+1. tích mã → tin nhóm có tag + ghi yeu_cau ✔
+2. tim người duyệt → cấp mã M-56CT8, 1/3 ✔
+3. tim lần 2 → bỏ qua ✔
+4. tim người lạ → bỏ qua ✔
+5. tích mã lần 2 trong ngày → từ chối ✔
+6. mã của tôi → 1/3 ✔
+7. đổi quà khi chưa đủ → từ chối ✔
+
+Đã xóa các dòng thử ở `yeu_cau`, `khach_hang`, `ma_tich`. `bat_chuc_nang` đã trả về **TAT**.
+
+### ✅ ĐÃ SỬA: lỗi cột F `khach_hang` (phát hiện khi chạy thử)
+Lỗi: node **"Them khach_hang"** (Append, `autoMapInputData`) ghi chuỗi rỗng vào mọi cột có tiêu đề, kể cả cột F (`so_ma_con`). Ô F1 là công thức mảng, nên bị chặn và báo `#REF!`.
+Cách sửa (chỉ trong Sheet, KHÔNG sửa workflow):
+- Bỏ công thức ở `khach_hang!F1`. Tab `khach_hang` giờ chỉ có 5 cột A..E, nên n8n chỉ ghi A..E.
+- 3 công thức "KHÁCH ĐỦ QUÀ CHƯA ĐỔI" ở `tong_hop!A11:C11` tự đếm mã bằng `COUNTIFS(ma_tich!B2:B;khach_hang!A2:A;ma_tich!G2:G;"con")`, không dùng cột F nữa. Đã thử với dữ liệu giả (1 khách 3 mã, 1 khách 1 mã): chỉ khách 3 mã hiện ra, đúng.
+- Chạy lại `kiem-tra-that.paste.js`: **7/7 OK** (id `test-tm-1794284444879`). `khach_hang` không còn bị ghi cột F. Đã xóa dòng thử, `bat_chuc_nang` = TAT.
+- `logic.js` không đọc `so_ma_con`. Bảng cột `khach_hang` trong KE-HOACH giờ là: zalo_id, ten_zalo, lan_dau, trang_thai, ghi_chu (không còn so_ma_con).
+
+### Việc tiếp (sau 15:00 ngày 11/11)
+1. Chủ quán xác nhận nhóm `5606409292553201202` và ID chủ quán/nhân viên, rồi điền `cau_hinh` (`nguoi_duyet`, `ten_nguoi_duyet`).
+2. (Lỗi cột F đã sửa xong.) Khi chạy lại `kiem-tra-that.paste.js`: bật `bat_chuc_nang=BAT` trước khi chạy, trả về TAT sau khi chạy, rồi xóa các dòng `test-`.
+3. Vá gateway (mục "Lắp lên VPS" bên dưới), sao lưu trước, rồi chạy đủ bộ hồi quy cũ (108 bước).
+4. Cập nhật skill `bot-zalo-nhi-nhi` (kiến trúc, ID 2 workflow, kịch bản hồi quy tích mã). Lưu ý: n8n hiện có thêm `LUONG 6 - Cham soc khach (chu quan duyet)` `LSl9oibQnLvx2B1M` và vài bản lưu `BAN LUU TAM ...` mà skill chưa ghi.
+
+---
+(Phần dưới là nội dung trước phiên này.)
 
 ## Đã xong
 
