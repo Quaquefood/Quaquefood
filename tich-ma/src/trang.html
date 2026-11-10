@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --xanh: #2e7d32; --xanh-dam: #1b5e20; --xanh-nhat: #e8f5e9; --cam: #ef6c00; --nen: #f5f5f0; --the: #fff; --vien: #e0e0e0; --chu: #212121; --phu: #6b6b6b; --do: #c62828; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--nen); color: var(--chu); font-size: 16px; line-height: 1.45; }
+header { background: var(--xanh); color: #fff; padding: 14px 16px; text-align: center; }
+header h1 { margin: 0; font-size: 1.2rem; }
+header p { margin: 2px 0 0; opacity: .9; font-size: .9rem; }
+main { max-width: 520px; margin: 0 auto; padding: 14px 16px 40px; }
+.hop { background: var(--the); border: 1px solid var(--vien); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+h2 { font-size: 1.05rem; margin: 0 0 8px; }
+label { display: block; font-weight: 600; margin: 10px 0 4px; font-size: .95rem; }
+input, select, textarea { width: 100%; padding: 11px; font-size: 1rem; border: 1px solid #bdbdbd; border-radius: 8px; background: #fff; }
+textarea { min-height: 96px; font-size: .9rem; font-family: inherit; }
+button { width: 100%; background: var(--xanh); color: #fff; border: 0; border-radius: 8px; padding: 12px; font-size: 1rem; font-weight: 600; margin-top: 10px; cursor: pointer; }
+button.phu { background: #fff; color: var(--xanh-dam); border: 1px solid var(--xanh); }
+button.cam { background: var(--cam); }
+button:disabled { opacity: .55; }
+.nho { font-size: .85rem; color: var(--phu); }
+.loi { color: var(--do); font-weight: 600; }
+.ok { color: var(--xanh-dam); font-weight: 600; }
+.an { display: none !important; }
+.cham { display: flex; justify-content: center; gap: 14px; margin: 12px 0 4px; }
+.cham span { width: 54px; height: 54px; border-radius: 50%; border: 3px dashed #bdbdbd; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #bdbdbd; }
+.cham span.co { border: 3px solid var(--xanh); background: var(--xanh-nhat); color: var(--xanh); }
+.so-lon { text-align: center; font-size: 1.6rem; font-weight: 700; }
+.bang-qua { background: #fff3e0; border: 2px solid var(--cam); border-radius: 10px; padding: 12px; text-align: center; font-weight: 600; margin: 10px 0; }
+#qr { display: flex; justify-content: center; margin: 8px 0; }
+#qr img, #qr canvas { width: 200px; height: 200px; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--vien); vertical-align: top; }
+.o-so { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.o-so div { background: var(--xanh-nhat); border-radius: 10px; padding: 10px; }
+.o-so b { display: block; font-size: 1.4rem; }
+.dong-kh { border-bottom: 1px solid var(--vien); padding: 10px 0; }
+.dong-kh:last-child { border-bottom: 0; }
+.hang-nut { display: flex; gap: 8px; }
+.hang-nut button { margin-top: 8px; padding: 9px; font-size: .9rem; }
+.the-so { text-align: center; letter-spacing: .12em; color: var(--phu); font-size: .9rem; }
+ol { padding-left: 20px; margin: 6px 0; }
+a { color: var(--xanh-dam); }
+</style>
+</head>
+<body>
+<header><h1 id="tieuDe">Thẻ tích mã</h1><p id="phuDe"></p></header>
+<main id="noiDung"><p class="nho">Đang tải…</p></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/*__BOOT__*/
+var CFG = BOOT.cfg;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function tien(n) { return String(Number(n) || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ'; }
+function luu(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+function doc(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function api(ten) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (ok, loi) {
+    var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { loi(new Error((e && e.message) || 'Lỗi kết nối, thử lại.')); });
+    r[ten].apply(r, args);
+  });
+}
+function bao(el, html) { $(el).innerHTML = html; }
+function baoLoi(el, msg) { bao(el, '<p class="loi">' + esc(msg) + '</p>'); }
+function chay(nut, fn) { nut.disabled = true; return Promise.resolve().then(fn).catch(function (e) { alert(e.message); }).then(function () { nut.disabled = false; }); }
+function saoChep(id, nut) {
+  var o = $(id); var txt = o.value;
+  var xong = function () { nut.textContent = 'Đã sao chép ✓'; setTimeout(function () { nut.textContent = 'Sao chép'; }, 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(xong, function () { o.select(); try { document.execCommand('copy'); xong(); } catch (e) {} });
+  } else { o.select(); try { document.execCommand('copy'); xong(); } catch (e) {} }
+}
+var demSc = 0;
+function hopSaoChep(tieuDe, txt) {
+  var id = 'sc' + (++demSc);
+  return '<p style="margin:10px 0 4px"><b>' + esc(tieuDe) + '</b></p><textarea id="' + id + '" readonly>' + esc(txt) + '</textarea>' +
+    '<button class="phu" onclick="saoChep(\'' + id + '\', this)">Sao chép</button>';
+}
+function nv() { return { pin: doc('tm_pin'), ten: doc('tm_nv'), vai: doc('tm_vai') }; }
+function luatChoi() {
+  return '<ol><li>Mỗi bill từ <b>' + tien(CFG.bill_toi_thieu) + '</b> trở lên được <b>1 mã</b>.</li>' +
+    '<li>Tích đủ <b>' + CFG.so_ma_doi + ' mã</b> → <b>' + esc(CFG.qua_tang) + '</b>.</li>' +
+    '<li>Khi thanh toán, mở thẻ này và đưa nhân viên quét mã QR.</li></ol>' +
+    (CFG.han_ma_ngay > 0 ? '<p class="nho">Mỗi mã có hạn ' + CFG.han_ma_ngay + ' ngày.</p>' : '');
+}
+$('tieuDe').textContent = CFG.ten_quan;
+
+/* ---------- ĐĂNG NHẬP NHÂN VIÊN / CHỦ QUÁN ---------- */
+function formDangNhap(sau) {
+  var n = nv();
+  return '<div class="hop"><h2>Đăng nhập</h2>' +
+    '<label for="dnPin">Mật khẩu</label><input id="dnPin" type="password" inputmode="numeric" autocomplete="current-password">' +
+    '<label for="dnTen">Tên nhân viên (để ghi sổ)</label><input id="dnTen" value="' + esc(n.ten) + '" placeholder="Ví dụ: Lan">' +
+    '<button id="dnNut">Đăng nhập</button><div id="dnKq"></div></div>';
+}
+function ganDangNhap(sau) {
+  $('dnNut').onclick = function () {
+    chay($('dnNut'), function () {
+      var pin = $('dnPin').value.trim(), ten = $('dnTen').value.trim();
+      if (!ten) throw new Error('Nhập tên nhân viên.');
+      return api('apiDangNhap', pin).then(function (r) {
+        if (!r.ok) throw new Error(r.loi);
+        luu('tm_pin', pin); luu('tm_nv', ten); luu('tm_vai', r.vai_tro);
+        sau();
+      });
+    });
+  };
+}
+function dangXuat() { luu('tm_pin', null); luu('tm_vai', null); location.reload(); }
+
+/* ---------- KHÁCH ĐĂNG KÝ THẺ ---------- */
+function veDangKy() {
+  $('phuDe').textContent = 'Chương trình tích mã cho thành viên nhóm Zalo';
+  var daLuu = doc('tm_the_cua_toi');
+  $('noiDung').innerHTML =
+    (daLuu ? '<div class="hop"><p>Máy này đã có thẻ của bạn.</p><button onclick="moThe(\'' + esc(daLuu) + '\')">Mở thẻ của tôi</button></div>' : '') +
+    '<div class="hop"><h2>Cách nhận quà</h2>' + luatChoi() +
+    (CFG.link_nhom_zalo ? '<p class="nho">Chương trình dành cho thành viên <a href="' + esc(CFG.link_nhom_zalo) + '">nhóm Zalo của quán</a>.</p>' : '') + '</div>' +
+    '<div class="hop"><h2>Đăng ký thẻ (miễn phí)</h2>' +
+    '<label for="dkTen">Tên Zalo của bạn</label><input id="dkTen" autocomplete="name">' +
+    '<label for="dkSdt">Số điện thoại</label><input id="dkSdt" type="tel" inputmode="numeric" autocomplete="tel" placeholder="0907754132">' +
+    '<button id="dkNut">Tạo thẻ của tôi</button><div id="dkKq"></div></div>';
+  $('dkNut').onclick = function () {
+    chay($('dkNut'), function () {
+      return api('apiDangKy', $('dkTen').value, $('dkSdt').value, '', '').then(function (r) {
+        if (!r.ok) return baoLoi('dkKq', r.loi);
+        luu('tm_the_cua_toi', r.the);
+        moThe(r.the, true);
+      });
+    });
+  };
+}
+
+/* ---------- THẺ CỦA KHÁCH ---------- */
+var THE = null;
+function moThe(id, moiTao) {
+  $('noiDung').innerHTML = '<p class="nho">Đang tải thẻ…</p>';
+  return api('apiThe', id).then(function (r) {
+    if (!r.ok) { $('noiDung').innerHTML = '<div class="hop"><p class="loi">' + esc(r.loi) + '</p></div>'; return; }
+    THE = r; CFG = r.cfg; veThe(moiTao);
+  }).catch(function (e) { $('noiDung').innerHTML = '<div class="hop"><p class="loi">' + esc(e.message) + '</p></div>'; });
+}
+function veThe(moiTao) {
+  var t = THE, n = nv();
+  $('phuDe').textContent = 'Thẻ tích mã của ' + t.ten;
+  var cham = '';
+  var hien = Math.max(t.so_ma_doi, Math.min(t.so_ma, t.so_ma_doi * 2));
+  for (var i = 0; i < Math.min(hien, 6); i++) cham += '<span class="' + (i < t.so_ma ? 'co' : '') + '">' + (i < t.so_ma ? '✓' : (i + 1)) + '</span>';
+  var h = '';
+  if (moiTao) {
+    h += '<div class="hop" style="border-color:var(--xanh)"><p class="ok">Tạo thẻ thành công!</p>' +
+      '<p><b>Lưu thẻ để lần sau mở nhanh:</b> bấm "Sao chép" rồi dán gửi vào <b>Cloud của tôi</b> trên Zalo (hoặc nhắn cho quán).</p>' +
+      hopSaoChep('Link thẻ của bạn', t.url) + '</div>';
+  }
+  if (t.trang_thai === 'khoa') h += '<div class="hop"><p class="loi">Thẻ đang tạm khóa. Vui lòng liên hệ quán.</p></div>';
+  h += '<div class="hop" style="text-align:center"><h2>' + esc(t.ten) + '</h2><div class="the-so">Thẻ ' + esc(t.the.slice(0, 4) + '-' + t.the.slice(4)) + ' · ' + esc(t.sdt) + '</div>' +
+    '<div class="cham">' + cham + '</div><div class="so-lon">' + t.so_ma + '/' + t.so_ma_doi + ' mã</div>' +
+    (t.du_qua
+      ? '<div class="bang-qua">🎉 Bạn đã đủ mã nhận quà!<br>' + esc(CFG.qua_tang) + (t.so_qua_co_the_doi > 1 ? '<br>(Đủ ' + t.so_qua_co_the_doi + ' lần quà)' : '') + '<br><span class="nho">Khi mua, đưa thẻ cho nhân viên để đổi.</span></div>'
+      : '<p>Tích thêm <b>' + (t.so_ma_doi - t.so_ma) + ' mã</b> để nhận: ' + esc(CFG.qua_tang) + '</p>') +
+    '<div id="qr"></div><p class="nho">Khi thanh toán, đưa mã QR này cho nhân viên quét.</p></div>';
+
+  if (n.pin) {
+    h += '<div class="hop" style="border:2px solid var(--xanh)"><h2>Nhân viên: ' + esc(n.ten) + '</h2>' +
+      '<label for="nvTien">Số tiền bill (đồng)</label><input id="nvTien" inputmode="numeric" placeholder="Từ ' + tien(CFG.bill_toi_thieu) + ' trở lên">' +
+      '<button id="nvCong">+ Cộng 1 mã</button>' +
+      (t.du_qua
+        ? '<label for="nvMon">Khách đổi quà – món áp dụng</label><select id="nvMon"><option value="">-- Chọn món --</option>' +
+          CFG.mon_ap_dung.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('') + '</select>' +
+          '<button id="nvDoi" class="cam">Đổi quà (dùng ' + t.so_ma_doi + ' mã)</button>'
+        : '') +
+      '<div id="nvKq"></div><p class="nho"><a href="' + esc(BOOT.url) + '?p=nv">← Trang nhân viên</a></p></div>';
+  }
+
+  h += '<div class="hop"><h2>Mã đang có</h2>' + (t.ds_ma.length
+    ? '<table><tr><th>Mã</th><th>Bill</th><th>Lúc</th></tr>' + t.ds_ma.map(function (m) { return '<tr><td>' + esc(m.ma) + '</td><td>' + esc(m.bill) + '</td><td>' + esc(m.luc) + '</td></tr>'; }).join('') + '</table>'
+    : '<p class="nho">Chưa có mã nào. Mua bill từ ' + tien(CFG.bill_toi_thieu) + ' để nhận mã đầu tiên!</p>') +
+    (t.so_ma_het_han ? '<p class="nho">' + t.so_ma_het_han + ' mã đã hết hạn.</p>' : '') + '</div>';
+  if (t.lich_su_qua.length) {
+    h += '<div class="hop"><h2>Quà đã nhận</h2><table>' + t.lich_su_qua.map(function (q) { return '<tr><td>' + esc(q.ma) + '</td><td>' + esc(q.mon) + '</td><td>' + esc(q.luc) + '</td></tr>'; }).join('') + '</table></div>';
+  }
+  h += '<div class="hop"><h2>Cách nhận quà</h2>' + luatChoi() + '</div>';
+  if (!n.pin) h += '<p class="nho" style="text-align:center"><a href="#" onclick="nvDangNhapTaiThe();return false">Nhân viên đăng nhập</a></p>';
+  $('noiDung').innerHTML = h;
+
+  try { new QRCode($('qr'), { text: t.url || t.the, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M }); }
+  catch (e) { $('qr').innerHTML = '<p class="nho">Mã thẻ: <b>' + esc(t.the) + '</b></p>'; }
+
+  if (n.pin) {
+    var cong = function (boQua) {
+      return api('apiCongMa', t.the, $('nvTien').value, n.pin, n.ten, !!boQua).then(function (r) {
+        if (r.can_xac_nhan) {
+          bao('nvKq', '<p class="loi">' + esc(r.loi) + '</p><button class="cam" id="nvVanCong">Vẫn cộng mã</button>');
+          $('nvVanCong').onclick = function () { chay($('nvVanCong'), function () { return cong(true); }); };
+          return;
+        }
+        if (!r.ok) return baoLoi('nvKq', r.loi);
+        THE = r; veThe();
+        bao('nvKq', '<p class="ok">✓ Đã cộng mã ' + esc(r.ma_moi) + '. Khách có ' + r.so_ma + '/' + r.so_ma_doi + ' mã.</p>' +
+          (r.du_qua ? '<div class="bang-qua">🎉 Khách ĐỦ MÃ nhận quà – báo khách ngay!</div>' : '') +
+          hopSaoChep('Tin nhắn gửi khách qua Zalo', r.tin_nhan));
+        $('nvKq').scrollIntoView({ behavior: 'smooth' });
+      });
+    };
+    $('nvCong').onclick = function () { chay($('nvCong'), function () { return cong(false); }); };
+    if ($('nvDoi')) $('nvDoi').onclick = function () {
+      chay($('nvDoi'), function () {
+        var mon = $('nvMon').value;
+        if (!mon) throw new Error('Chọn món khách mua.');
+        if (!confirm('Đổi quà cho ' + t.ten + ' (' + mon + ')? ' + t.so_ma_doi + ' mã sẽ được dùng.')) return;
+        return api('apiDoiQua', t.the, mon, n.pin, n.ten).then(function (r) {
+          if (!r.ok) return baoLoi('nvKq', r.loi);
+          THE = r; veThe();
+          bao('nvKq', '<p class="ok">✓ Đã đổi quà ' + esc(r.ma_qua) + ' – giảm cho khách: ' + esc(CFG.qua_tang) + '</p>' + hopSaoChep('Tin nhắn gửi khách qua Zalo', r.tin_nhan));
+          $('nvKq').scrollIntoView({ behavior: 'smooth' });
+        });
+      });
+    };
+  }
+}
+function nvDangNhapTaiThe() {
+  $('noiDung').innerHTML = formDangNhap();
+  ganDangNhap(function () { veThe(); });
+}
+
+/* ---------- TRANG NHÂN VIÊN ---------- */
+function veNhanVien() {
+  $('phuDe').textContent = 'Trang nhân viên';
+  var n = nv();
+  if (!n.pin) { $('noiDung').innerHTML = formDangNhap(); ganDangNhap(veNhanVien); return; }
+  $('noiDung').innerHTML =
+    '<div class="hop"><p>Xin chào <b>' + esc(n.ten) + '</b>' + (n.vai === 'chu' ? ' (chủ quán) · <a href="' + esc(BOOT.url) + '?p=chu">Trang chủ quán</a>' : '') + '</p>' +
+    '<h2>Khi khách thanh toán</h2><ol><li>Khách mở thẻ, bạn dùng <b>camera điện thoại</b> quét mã QR trên thẻ.</li>' +
+    '<li>Thẻ mở ra trên máy bạn → nhập tiền bill → <b>Cộng 1 mã</b>.</li><li>Khách đủ ' + CFG.so_ma_doi + ' mã + mua món áp dụng → <b>Đổi quà</b>.</li></ol></div>' +
+    '<div class="hop"><h2>Tìm khách (khách quên điện thoại / cần gửi lại thẻ)</h2>' +
+    '<input id="timQ" placeholder="SĐT hoặc tên"><button id="timNut">Tìm</button><div id="timKq"></div></div>' +
+    '<div class="hop"><h2>Đăng ký thẻ hộ khách</h2>' +
+    '<label for="hkTen">Tên Zalo của khách</label><input id="hkTen">' +
+    '<label for="hkSdt">SĐT khách</label><input id="hkSdt" type="tel" inputmode="numeric">' +
+    '<button id="hkNut">Tạo thẻ</button><div id="hkKq"></div></div>' +
+    '<button class="phu" onclick="dangXuat()">Đăng xuất</button>';
+  $('timNut').onclick = function () {
+    chay($('timNut'), function () {
+      return api('apiTim', $('timQ').value, n.pin).then(function (r) {
+        if (!r.ok) return baoLoi('timKq', r.loi);
+        if (!r.ds.length) return bao('timKq', '<p class="nho">Không tìm thấy khách.</p>');
+        bao('timKq', r.ds.map(function (k, i) {
+          return '<div class="dong-kh"><b>' + esc(k.ten) + '</b> · ' + esc(k.sdt) + '<br>' + k.so_ma + '/' + CFG.so_ma_doi + ' mã' +
+            (k.du_qua ? ' · <span class="ok">ĐỦ QUÀ</span>' : '') + (k.trang_thai === 'khoa' ? ' · <span class="loi">khóa</span>' : '') +
+            '<div class="hang-nut"><button onclick="moThe(\'' + esc(k.the) + '\')">Mở thẻ</button>' +
+            '<button class="phu" onclick="hienLink(' + i + ')">Gửi lại link</button></div><div id="lk' + i + '"></div></div>';
+        }).join(''));
+        window.KQ_TIM = r.ds;
+      });
+    });
+  };
+  $('hkNut').onclick = function () {
+    chay($('hkNut'), function () {
+      return api('apiDangKy', $('hkTen').value, $('hkSdt').value, n.pin, n.ten).then(function (r) {
+        if (!r.ok) return baoLoi('hkKq', r.loi);
+        bao('hkKq', '<p class="ok">' + (r.da_co ? 'SĐT này đã có thẻ (' + esc(r.ten) + ').' : '✓ Đã tạo thẻ cho ' + esc(r.ten) + '.') + '</p>' +
+          hopSaoChep('Tin nhắn gửi khách qua Zalo', 'Dạ ' + CFG.ten_quan + ' gửi ' + r.ten + ' thẻ tích mã ạ. Mỗi bill từ ' + tien(CFG.bill_toi_thieu) +
+            ' được 1 mã, đủ ' + CFG.so_ma_doi + ' mã được ' + CFG.qua_tang + '. Khi thanh toán anh/chị mở link này đưa nhân viên quét nhé:\n' + r.url) +
+          '<button onclick="moThe(\'' + esc(r.the) + '\')">Mở thẻ để cộng mã</button>');
+      });
+    });
+  };
+}
+function hienLink(i) {
+  var k = window.KQ_TIM[i];
+  bao('lk' + i, hopSaoChep('Tin nhắn gửi khách qua Zalo', 'Dạ ' + CFG.ten_quan + ' gửi lại thẻ tích mã của ' + k.ten + ' ạ (đang có ' + k.so_ma + '/' + CFG.so_ma_doi + ' mã):\n' + k.url));
+}
+
+/* ---------- TRANG CHỦ QUÁN ---------- */
+function veChuQuan() {
+  $('phuDe').textContent = 'Trang chủ quán';
+  var n = nv();
+  if (!n.pin || n.vai !== 'chu') { $('noiDung').innerHTML = formDangNhap() + '<p class="nho">Dùng mật khẩu CHỦ QUÁN.</p>'; ganDangNhap(veChuQuan); return; }
+  $('noiDung').innerHTML = '<p class="nho">Đang tải báo cáo…</p>';
+  api('apiBaoCao', n.pin).then(function (r) {
+    if (!r.ok) { $('noiDung').innerHTML = '<div class="hop"><p class="loi">' + esc(r.loi) + '</p><button class="phu" onclick="dangXuat()">Đăng nhập lại</button></div>'; return; }
+    var t = r.tk;
+    var h = '<div class="hop"><h2>Hôm nay</h2><div class="o-so">' +
+      '<div><b>' + t.ma_hom_nay + '</b>mã đã cấp</div><div><b>' + t.qua_hom_nay + '</b>quà đã đổi</div></div>' +
+      (Object.keys(r.nv_hom_nay).length ? '<p class="nho">Theo nhân viên: ' + Object.keys(r.nv_hom_nay).map(function (k) { return esc(k) + ' ' + r.nv_hom_nay[k]; }).join(' · ') + '</p>' : '') +
+      '</div><div class="hop"><h2>Tháng này</h2><div class="o-so">' +
+      '<div><b>' + t.ma_thang + '</b>mã đã cấp</div><div><b>' + t.qua_thang + '</b>quà đã đổi</div>' +
+      '<div><b>' + tien(t.tien_giam_thang) + '</b>tiền đã giảm</div><div><b>' + tien(t.doanh_so_bill_thang) + '</b>tổng bill có tích mã</div>' +
+      '<div><b>' + t.khach_moi_thang + '</b>khách mới đăng ký</div><div><b>' + t.tong_khach + '</b>tổng số thẻ</div></div></div>';
+    h += '<div class="hop"><h2>Khách ĐỦ QUÀ chưa đổi – cần nhắc (' + r.can_nhac.length + ')</h2>' +
+      (r.can_nhac.length ? r.can_nhac.map(function (k, i) {
+        return '<div class="dong-kh"><b>' + esc(k.ten) + '</b> · ' + esc(k.sdt) + ' · ' + k.so_ma + ' mã' +
+          '<div class="hang-nut"><button class="phu" onclick="hienNhac(' + i + ')">Tin nhắc qua Zalo</button><button onclick="moThe(\'' + esc(k.the) + '\')">Mở thẻ</button></div><div id="nh' + i + '"></div></div>';
+      }).join('') : '<p class="nho">Chưa có khách nào đủ quà.</p>') + '</div>';
+    h += '<div class="hop"><h2>Hoạt động gần đây</h2>' + (r.hoat_dong.length
+      ? '<table><tr><th>Lúc</th><th>Việc</th><th>Khách</th><th>NV</th></tr>' + r.hoat_dong.map(function (x) {
+          return '<tr><td>' + esc(x.luc) + '</td><td>' + esc(x.loai) + '<br><span class="nho">' + esc(x.chi_tiet) + '</span></td><td>' + esc(x.ten) + '</td><td>' + esc(x.nv) + '</td></tr>';
+        }).join('') + '</table>'
+      : '<p class="nho">Chưa có hoạt động.</p>') + '</div>';
+    h += '<div class="hop"><h2>Quản lý</h2><p>Toàn bộ sổ sách nằm trong Google Sheet: <a href="' + esc(r.link_sheet) + '">mở Sheet</a>.</p>' +
+      '<p class="nho">Đổi quy định (số mã, bill tối thiểu, quà, món áp dụng) ở tab <b>cau_hinh</b>. Khóa thẻ gian lận: tab <b>khach_hang</b>, cột trang_thai ghi <b>khoa</b>.</p>' +
+      '<p class="nho">Link đăng ký ghim trong nhóm Zalo: <b>' + esc(BOOT.url) + '</b></p>' +
+      '<button class="phu" onclick="veNhanVien()">Trang nhân viên</button><button class="phu" onclick="dangXuat()">Đăng xuất</button></div>';
+    $('noiDung').innerHTML = h;
+    window.DS_NHAC = r.can_nhac;
+  }).catch(function (e) { $('noiDung').innerHTML = '<p class="loi">' + esc(e.message) + '</p>'; });
+}
+function hienNhac(i) { bao('nh' + i, hopSaoChep('Tin nhắc gửi khách', window.DS_NHAC[i].tin_nhac)); }
+
+/* ---------- KHỞI ĐỘNG ---------- */
+if (BOOT.view === 'the') moThe(BOOT.the);
+else if (BOOT.view === 'nv') veNhanVien();
+else if (BOOT.view === 'chu') veChuQuan();
+else veDangKy();
+</script>
+</body>
+</html>

@@ -1,39 +1,69 @@
-# Tích mã khuyến mãi cho thành viên nhóm Zalo
+# Thẻ tích mã cho khách nhóm Zalo
 
-**Cách hoạt động**
-1. Thành viên nhóm Zalo đến mua hàng → nhân viên mở `tich-ma/nhan-vien.html`, nhập SĐT khách, bấm **Cấp mã** → được 1 mã (ví dụ `QF-7K3QX`) cùng tin nhắn soạn sẵn, bấm **Sao chép** rồi dán gửi khách qua Zalo.
-2. Khách gom đủ số mã (mặc định **5 mã**) → nhân viên vào tab **Đổi thưởng**, nhập SĐT *hoặc* các mã khách đưa → hệ thống đánh dấu các mã đã dùng và tạo mã đổi thưởng `DT-xxxxxx`.
-3. Khách tự xem mình có bao nhiêu mã ở trang `tich-ma/khach-hang.html` (có thể ghim link này trong nhóm Zalo). Trang khách chỉ hiện SĐT đã che và 2 ký tự cuối của mã.
+**Chương trình:** mỗi bill từ **30.000đ** được **1 mã**. Gom đủ **3 mã** thì được **giảm 5.000đ khi mua Trà tắc hoặc Bánh tráng phơi sương muối sặc túi zip**.
 
-Mỗi mã chỉ dùng được 1 lần. Hệ thống chặn mã nhập trùng, mã đã đổi và mã hết hạn.
+## Cách chương trình chạy
 
-## Cài đặt (khoảng 5 phút, làm 1 lần, nên làm trên máy tính)
+| Ai | Làm gì |
+|---|---|
+| **Khách** | Bấm link đăng ký ghim trong nhóm Zalo, nhập tên Zalo và SĐT, rồi nhận **thẻ riêng có mã QR**. Khách lưu link thẻ vào "Cloud của tôi" trên Zalo. |
+| **Khách thanh toán** | Mở thẻ và đưa mã QR cho nhân viên. |
+| **Nhân viên** | Dùng camera điện thoại quét QR, thẻ khách mở trên máy nhân viên. Nhập tiền bill rồi bấm **+ Cộng 1 mã**. Màn hình hiện sẵn tin nhắn, nhân viên bấm Sao chép rồi gửi khách qua Zalo. |
+| **Khách đủ 3 mã** | Thẻ của khách hiện chữ "🎉 Bạn đã đủ mã nhận quà!". Máy nhân viên báo "Khách ĐỦ MÃ". Tin nhắn gửi khách cũng báo đủ quà. |
+| **Đổi quà** | Khi khách mua Trà tắc hoặc Bánh tráng túi zip, nhân viên chọn món rồi bấm **Đổi quà**. Hệ thống trừ 3 mã và ghi sổ. |
+| **Chủ quán** | Mở trang chủ quán để xem số mã đã cấp, số quà đã đổi, tiền đã giảm, mã nào do nhân viên nào cấp, và **danh sách khách đủ quà chưa đổi** (kèm tin nhắc sẵn để gửi Zalo). |
 
-Phần này cần đăng nhập tài khoản Google của chủ quán nên phải tự làm:
+### Chống gian lận và minh bạch
+- **Mã gắn với thẻ có QR riêng, không gắn với SĐT.** Biết SĐT của người khác cũng không lấy được thẻ của họ. Một SĐT chỉ đăng ký được 1 thẻ.
+- **Chỉ nhân viên có mật khẩu mới cộng được mã**, và chỉ cộng khi bill đủ 30.000đ.
+- **Chống bấm nhầm:** nếu cùng 1 thẻ được cộng 2 lần trong 10 phút, máy sẽ hỏi lại "đây có phải bill khác không".
+- **Mỗi lần cộng mã hoặc đổi quà đều ghi sổ** trong Google Sheet: giờ, số tiền bill, tên nhân viên. Chủ quán xem lại được tất cả.
+- **Khóa thẻ:** nếu phát hiện gian lận, ghi `khoa` vào cột `trang_thai` của khách trong tab `khach_hang`.
 
-1. Mở https://sheets.new để tạo Google Sheet mới, đặt tên ví dụ "Tich ma nhom Zalo".
-2. Trong Sheet: **Tiện ích mở rộng → Apps Script**. Xóa code mặc định, dán toàn bộ `tich-ma/apps-script/Code.gs`, bấm 💾 Lưu.
-3. Ở thanh trên chọn hàm **caiDat** → bấm **▶ Chạy** → cho phép quyền truy cập (nếu Google báo "chưa xác minh": Nâng cao → Đi tới dự án).
-   Nhật ký thực thi hiện **Mật khẩu nhân viên: xxxxxx** – ghi lại mật khẩu này.
-4. **Triển khai → Tùy chọn triển khai mới →** (bánh răng) **Ứng dụng web**: Thực thi với tư cách **Tôi**, Người có quyền truy cập **Bất kỳ ai** → Triển khai → sao chép URL `https://script.google.com/macros/s/.../exec`.
-5. Dán URL vào `tich-ma/config.js` (`window.TICH_MA_API = '...'`) hoặc gửi URL cho Claude để Claude điền và push.
+## Cài đặt (khoảng 5 phút, làm 1 lần, nên dùng máy tính)
 
-Đổi mật khẩu nhân viên: Cài đặt dự án (bánh răng) → Thuộc tính tập lệnh → sửa `PIN_NHAN_VIEN`.
+1. Mở **https://sheets.new** để tạo Google Sheet mới, đặt tên ví dụ "Tich ma Nhi Nhi".
+2. Trong Sheet, vào **Tiện ích mở rộng → Apps Script**. Xóa hết code mẫu, dán **toàn bộ** file [`tich-ma/Code.gs`](Code.gs), rồi bấm 💾 **Lưu**.
+3. Ở ô chọn hàm phía trên, chọn **caiDat** rồi bấm **▶ Chạy**.
+   - Google sẽ hỏi quyền. Bấm **Xem xét quyền**, chọn tài khoản của bạn.
+   - Nếu hiện "Google chưa xác minh ứng dụng này", bấm **Nâng cao → Đi tới … (không an toàn)** rồi bấm **Cho phép**. Đây là code của chính bạn nên an toàn.
+   - Phần **Nhật ký thực thi** sẽ hiện **mật khẩu NHÂN VIÊN** và **mật khẩu CHỦ QUÁN**. Hãy ghi lại cả hai.
+4. Bấm **Triển khai → Tùy chọn triển khai mới**, bấm bánh răng và chọn **Ứng dụng web**:
+   - Thực thi với tư cách: **Tôi**
+   - Người có quyền truy cập: **Bất kỳ ai**
+   - Bấm **Triển khai** rồi **sao chép URL ứng dụng web** (dạng `https://script.google.com/macros/s/…/exec`).
+5. Dùng link đó như sau:
+   - **Link đăng ký cho khách** (ghim trong nhóm Zalo): `URL`
+   - **Trang nhân viên**: `URL?p=nv`
+   - **Trang chủ quán**: `URL?p=chu`
 
-> Sửa `Code.gs` sau này: phải **Triển khai → Quản lý triển khai → Chỉnh sửa → Phiên bản mới** thì thay đổi mới có hiệu lực.
+Mỗi máy nhân viên chỉ cần đăng nhập 1 lần, máy sẽ tự nhớ.
 
-## Đổi quy định khuyến mãi (sửa trực tiếp tab `cau_hinh`, có hiệu lực ngay)
+> Khi sửa code về sau: vào **Triển khai → Quản lý triển khai → ✏️ Chỉnh sửa → Phiên bản: Phiên bản mới → Triển khai**. Làm vậy link sẽ giữ nguyên.
 
-| khoa | Mặc định | Ý nghĩa |
-|---|---|---|
-| so_ma_doi | 5 | Số mã cần gom để đổi 1 lần |
-| phan_thuong | Giảm 20.000đ cho đơn kế tiếp | Nội dung khuyến mãi |
-| han_su_dung_ngay | 90 | Mã hết hạn sau N ngày (0 = không hết hạn) |
-| so_tien_toi_thieu | 0 | Hóa đơn tối thiểu để được cấp mã (0 = không giới hạn) |
-| tien_to_ma | QF | Chữ đầu của mã |
-| ten_quan | Quaque Food | Tên quán trong tin nhắn gửi khách |
+## Đổi quy định (sửa tab `cau_hinh`, có hiệu lực ngay)
 
-## Lưu ý
-- Hệ thống không tự đọc được danh sách nhóm Zalo; nhân viên phải đánh dấu ô "Đã kiểm tra khách là thành viên nhóm Zalo" trước khi cấp mã.
-- Mật khẩu nhân viên chỉ lưu trong Script Properties, không nằm trong Sheet hay trong code web.
-- Tab `ma_tich_diem` là sổ cái: xem được ai được cấp mã lúc nào, đổi thưởng lúc nào (cột `ma_doi_thuong`).
+| khoa | Mặc định |
+|---|---|
+| ten_quan | Bánh tráng Nhi Nhi |
+| so_ma_doi | 3 |
+| bill_toi_thieu | 30000 |
+| qua_tang | Giảm 5.000đ khi mua Trà tắc hoặc Bánh tráng phơi sương muối sặc túi zip |
+| gia_tri_giam | 5000 |
+| mon_ap_dung | Trà tắc; Bánh tráng phơi sương muối sặc túi zip |
+| han_ma_ngay | 0 (không hết hạn) |
+| phut_chong_trung | 10 |
+| link_nhom_zalo | (trống) – điền link nhóm để hiện trên trang đăng ký |
+
+Đổi mật khẩu: trong Apps Script vào **Cài đặt dự án (bánh răng) → Thuộc tính tập lệnh**, sửa `PIN_NHAN_VIEN` hoặc `PIN_CHU_QUAN`.
+
+## Mẫu tin ghim trong nhóm Zalo
+
+> 🎁 **TÍCH MÃ NHẬN QUÀ** – dành cho thành viên nhóm
+> Mỗi bill từ 30K = 1 mã. Đủ 3 mã được **giảm 5K khi mua Trà tắc hoặc Bánh tráng phơi sương muối sặc túi zip**.
+> 👉 Đăng ký thẻ miễn phí: *(dán link đăng ký)*
+> Khi thanh toán, mở thẻ và đưa nhân viên quét QR là xong!
+
+## Dành cho người sửa code
+- Code nằm ở `src/server.gs` (xử lý) và `src/trang.html` (giao diện). Chạy `node tich-ma/build.js` để ghép thành `Code.gs`.
+- Kiểm tra: `node tich-ma/test/kiem-tra.js` chạy trên Google Sheet giả lập.
