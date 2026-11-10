@@ -181,4 +181,14 @@ chay(W1, sheetMoi(NHOM), { event: 'message', threadId: NHOM, threadType: 'group'
 assert.strictEqual(gw11.gui.length, 0);
 ok('tin trong nhóm → bỏ qua');
 
+
+// 12. Tên khách dạng NFD (dấu tách rời) → tin + tag tính trên chữ NFC, tag trỏ đúng "@Tên"
+const S12 = sheetMoi(NHOM), gw12 = { so: 0, gui: [] };
+const tenNFD = 'Thảo Vy'.normalize('NFD');
+chay(W1, S12, tin('666', 'tích mã', tenNFD), gw12);
+const g12 = gw12.gui[0], m12 = g12.mentions[0];
+assert.strictEqual(g12.text, g12.text.normalize('NFC'));
+assert.strictEqual(g12.text.substr(m12.pos, m12.len), '@Thảo Vy'.normalize('NFC'));
+ok('tag đúng vị trí khi tên có dấu dạng NFD');
+
 console.log('\nTICH MA N8N: TẤT CẢ ' + so + ' NHÓM KIỂM TRA OK');

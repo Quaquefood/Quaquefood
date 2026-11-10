@@ -38,9 +38,15 @@ return (x.ghi || []).filter(g => g.tab === ${JSON.stringify(tab)} && g.kieu === 
 const CHUAN_BI_TIN = `
 const x = $('Xu ly').first().json;
 if (x.test) return [];
+// Gateway chuẩn hóa NFC trước khi gửi → tính lại vị trí tag trên chữ đã NFC.
+const nfcTag = (text, ds) => (ds || []).map(m => {
+  const tag = String(text).substr(m.pos, m.len).normalize('NFC'), t = String(text).normalize('NFC');
+  const pos = t.indexOf(tag);
+  return pos >= 0 ? { pos, len: tag.length, uid: String(m.uid) } : null;
+}).filter(Boolean);
 return (x.tin || []).filter(t => String(t.threadId).indexOf('test-') !== 0).map(t => ({ json: {
-  threadId: String(t.threadId), threadType: t.den === 'group' ? 'group' : 'user', text: t.text,
-  mentions: t.mentions || [], ma_yc: t.ma_yc || '', cho_msgId: !!t.cho_msgId } }));
+  threadId: String(t.threadId), threadType: t.den === 'group' ? 'group' : 'user', text: String(t.text).normalize('NFC'),
+  mentions: nfcTag(t.text, t.mentions), ma_yc: t.ma_yc || '', cho_msgId: !!t.cho_msgId } }));
 `;
 
 /** Tin thử: không gửi Zalo, nhưng giả msgId của tin nhóm để thử được bước thả tim. */

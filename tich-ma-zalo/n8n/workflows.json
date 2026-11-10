@@ -441,7 +441,7 @@
           1060
         ],
         "parameters": {
-          "jsCode": "\nconst x = $('Xu ly').first().json;\nif (x.test) return [];\nreturn (x.tin || []).filter(t => String(t.threadId).indexOf('test-') !== 0).map(t => ({ json: {\n  threadId: String(t.threadId), threadType: t.den === 'group' ? 'group' : 'user', text: t.text,\n  mentions: t.mentions || [], ma_yc: t.ma_yc || '', cho_msgId: !!t.cho_msgId } }));\n"
+          "jsCode": "\nconst x = $('Xu ly').first().json;\nif (x.test) return [];\n// Gateway chuẩn hóa NFC trước khi gửi → tính lại vị trí tag trên chữ đã NFC.\nconst nfcTag = (text, ds) => (ds || []).map(m => {\n  const tag = String(text).substr(m.pos, m.len).normalize('NFC'), t = String(text).normalize('NFC');\n  const pos = t.indexOf(tag);\n  return pos >= 0 ? { pos, len: tag.length, uid: String(m.uid) } : null;\n}).filter(Boolean);\nreturn (x.tin || []).filter(t => String(t.threadId).indexOf('test-') !== 0).map(t => ({ json: {\n  threadId: String(t.threadId), threadType: t.den === 'group' ? 'group' : 'user', text: String(t.text).normalize('NFC'),\n  mentions: nfcTag(t.text, t.mentions), ma_yc: t.ma_yc || '', cho_msgId: !!t.cho_msgId } }));\n"
         }
       },
       {

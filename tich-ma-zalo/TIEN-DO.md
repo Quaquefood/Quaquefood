@@ -37,11 +37,11 @@ Ghi chú:
 ## ⛔ Đang chờ (cần trước khi lắp tiếp)
 
 1. **Trình duyệt:** phiên trước chạy trên đám mây, không kết nối được trình duyệt trong app Claude, nên không vào được n8n. Mạng của phiên cũng chặn `bot.trandaihiepauto.click`. Cần mở phiên trên app Claude Desktop của máy đã đăng nhập n8n.
-2. **Code gateway:** cần file `index.js` thật trên VPS để viết bản vá chính xác. Chủ quán chạy trong **PowerShell trên Windows**:
+2. ~~**Code gateway**~~ ĐÃ CÓ (10/11), bản vá ở `gateway/index.js`. (Cũ: cần file `index.js` thật trên VPS để viết bản vá chính xác. Chủ quán chạy trong **PowerShell trên Windows**:
    ```powershell
    scp root@45.77.42.161:/opt/zalo-n8n-stack/zalo-gateway/index.js $HOME\Downloads\zalo-gateway-index.js
    ```
-   Sau đó gửi file này cho Claude (đính kèm trong chat, hoặc tải lên repo).
+   Sau đó gửi file này cho Claude.)
 3. **Chia sẻ Sheet:** chưa kiểm được Sheet đã chia sẻ cho `zalo-bot-reader@zalo-bot-513800.iam.gserviceaccount.com` (quyền Người chỉnh sửa) chưa. Công cụ Sheets của Claude không xem được danh sách chia sẻ. Chủ quán mở Sheet → **Chia sẻ** → kiểm tra. Khi tạo workflow, lượt chạy thử đầu tiên cũng sẽ báo lỗi 403 nếu chưa chia sẻ.
 4. **`cau_hinh`:** còn trống `nhom_khach_id` và Zalo ID nhân viên. Lấy theo Bước 1 của KE-HOACH (đọc execution có `raw.isGroup=true`), cần vào được n8n.
 
@@ -56,45 +56,60 @@ Ghi chú:
 2. Kiểm tra `POST /rest/node-types` cho `googleSheets` đúng typeVersion của node mẫu: có `columns.matchingColumns` (bản ≥4.4) hay `columnToMatchOn`, và có `options.cellFormat`.
 3. **Báo chủ quán**, rồi chạy `n8n/tao-workflow.paste.js` trong tab n8n. Đọc `window.__TM_TAO` để lấy ID 2 workflow.
 4. Activate 2 workflow mới. Bot cũ không bị ảnh hưởng vì gateway chưa chuyển gì sang. Thử `/webhook/tich-ma` bằng `test-…` theo đúng thứ tự trong `test/kiem-tra-n8n.js`, rồi xóa các dòng thử trong Sheet.
-5. **Vá gateway**, theo cách dưới, khi đã có `index.js`.
+5. **Vá gateway**, theo mục dưới.
 
-## Vá zalo-gateway (soạn sẵn; sẽ chốt dòng cụ thể khi đã đọc index.js)
+## Vá zalo-gateway (ĐÃ SOẠN XONG từ index.js thật lấy trên VPS 10/11)
 
-**Trên VPS** (`ssh root@45.77.42.161`, `cd /opt/zalo-n8n-stack`):
-```bash
-cp zalo-gateway/index.js zalo-gateway/index.js.bak-$(date +%Y%m%d-%H%M)
-```
+- `gateway/goc/index.js`: bản gốc lấy từ VPS, không có khóa bí mật (chỉ dùng `process.env`).
+- `gateway/tichma-snippet.js`: khối TÍCH MÃ được chèn vào.
+- `gateway/va-gateway.js`: sinh bản vá. Mỗi chỗ thay đều kiểm tra chuỗi gốc phải xuất hiện đúng 1 lần.
+- `gateway/index.js`: **bản vá**, dùng để chép lên VPS.
 
-Ba chỗ sửa trong `index.js`:
-1. Đầu file: `const tichma = require('./tichma-gateway');`
-2. Chỗ POST sang `/webhook/zalo-in`: thay URL cố định bằng `tichma.webhookCho(payload, URL_CU)`. Phần còn lại giữ nguyên.
-3. Trong `/send`, thay `api.sendMessage(text, threadId, type)` bằng:
-   ```js
-   const kq = await api.sendMessage(tichma.noiDungGui(text, req.body.mentions), threadId, type)
+Thay đổi (4 chỗ, gộp vào index.js nên không phải sửa Dockerfile):
+1. Thêm khối `TICHMA` sau phần đọc biến môi trường.
+2. Tin nhắn: `postJson(TICHMA.url(payload, N8N_WEBHOOK_URL), payload)`.
+3. Thả cảm xúc: tương tự, chọn đường qua `TICHMA.url`.
+4. `/send`:
+   - nhận `mentions`, chỉ dùng khi TICHMA_ON=1, tin nhóm và chỉ 1 đoạn;
+   - JSON trả về có thêm `msgId`. Các workflow cũ không đọc trường này.
+
+`test/kiem-tra-gateway.js` chạy THẬT cả bản gốc lẫn bản vá, với zca-js/express/fetch giả:
+- TICHMA_ON không đặt, `=0`, hay `=0` có đủ cấu hình: đường đi sự kiện và tin gửi **y hệt bản gốc**;
+- TICHMA_ON=1: chỉ "tích mã/đổi quà/mã của tôi" (chat riêng) và tim của người duyệt trong nhóm khách đi sang `/webhook/tich-ma`.
+
+### Lắp lên VPS
+Làm cùng lúc chạy bộ hồi quy, nên **làm trong phiên có trình duyệt**.
+
+Chưa cần sửa `docker-compose.yml`: không có biến TICHMA_ON thì gateway chạy như cũ. Gateway khởi động lại mất vài giây. Phiên Zalo nằm ở volume `zalo_data` nên không phải quét QR lại.
+
+1. **PowerShell trên Windows**: tải `tich-ma-zalo/gateway/index.js` từ nhánh về `Downloads\zalo-gateway-index-moi.js`, rồi chép lên VPS:
+   ```powershell
+   scp $HOME\Downloads\zalo-gateway-index-moi.js root@45.77.42.161:/opt/zalo-n8n-stack/zalo-gateway/index.js.moi
    ```
-   Rồi thêm `msgId: tichma.layMsgId(kq)` vào JSON trả về. Không có `mentions` thì tham số truyền vào vẫn là chuỗi text như cũ.
+2. **Trên VPS** (`ssh root@45.77.42.161`), sao lưu bản cũ rồi thay bằng bản mới:
+   ```bash
+   cd /opt/zalo-n8n-stack/zalo-gateway && cp index.js index.js.bak-$(date +%Y%m%d-%H%M) && mv index.js.moi index.js
+   ```
+3. **Trên VPS**, build lại gateway và xem log:
+   ```bash
+   cd /opt/zalo-n8n-stack && docker compose up -d --build zalo-gateway && sleep 20 && docker compose logs --tail 10 zalo-gateway
+   ```
+   Log phải có `đăng nhập bằng cookie đã lưu: OK` và `[listener] đã kết nối`.
+4. Chạy đủ bộ hồi quy cũ (108 bước).
+5. Khi đã có `nhom_khach_id` và ID nhân viên, thêm vào service `zalo-gateway` trong `docker-compose.yml` (mục `environment:`):
+   ```yaml
+         TICHMA_ON: "1"
+         TICHMA_GROUP: "<nhom_khach_id>"
+         TICHMA_APPROVERS: "306769430050266425,<id nhân viên>"
+         TICHMA_WEBHOOK: "http://n8n:5678/webhook/tich-ma"
+   ```
+   Rồi chạy `docker compose up -d zalo-gateway`. Log sẽ có dòng `[tichma] BẬT: ...`.
 
-Biến môi trường trong service `zalo-gateway` (`docker-compose.yml`):
-```yaml
-      TICHMA_ON: "0"
-      TICHMA_GROUP: "<nhom_khach_id>"
-      TICHMA_APPROVERS: "306769430050266425,<id nhân viên>"
-      TICHMA_WEBHOOK: "http://n8n:5678/webhook/tich-ma"
-```
-
-Đưa file lên VPS. Chạy trong **PowerShell trên Windows**:
-```powershell
-scp $HOME\Downloads\tichma-gateway.js root@45.77.42.161:/opt/zalo-n8n-stack/zalo-gateway/
-```
-
-Build lại gateway. Chạy **trên VPS**:
+**Hoàn tác**, chạy trên VPS:
 ```bash
-docker compose up -d --build zalo-gateway && docker compose logs --tail 20 zalo-gateway
+cd /opt/zalo-n8n-stack/zalo-gateway && ls index.js.bak-*
 ```
-
-Hoàn tác: đặt `TICHMA_ON: "0"` rồi `docker compose up -d zalo-gateway`, hoặc chép file `.bak` về chỗ cũ rồi build lại.
-
-Sau khi vá: chạy **đủ bộ hồi quy cũ** (mục 8 skill, 108 bước, ~45 phút), lúc `TICHMA_ON=0` và cả lúc `=1`. Có bước nào hỏng thì hoàn tác ngay.
+Chép file `.bak` mới nhất đè lên `index.js`, rồi `docker compose up -d --build zalo-gateway`. Hoặc chỉ cần đặt `TICHMA_ON: "0"`.
 
 ## Kịch bản hồi quy tích mã (thêm vào mục 8 skill khi đã lắp)
 
