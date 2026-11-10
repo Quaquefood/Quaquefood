@@ -19,7 +19,9 @@ window.__TM_TAO = { trang_thai: 'dang_chay' };
   for (const w of WF) {
     w.nodes.forEach(n => {
       n.id = crypto.randomUUID();
-      if (n.__tpl) { n.typeVersion = tpl.typeVersion; n.credentials = tpl.credentials; delete n.__tpl; }
+      if (n.__tpl) { n.typeVersion = tpl.typeVersion; n.credentials = tpl.credentials; delete n.__tpl;
+        // Bắt buộc chép cả authentication (serviceAccount), thiếu thì n8n không cho activate (10/11).
+        if (tpl.parameters && tpl.parameters.authentication) n.parameters = Object.assign({ authentication: tpl.parameters.authentication }, n.parameters); }
       if (n.__webhook) { n.webhookId = crypto.randomUUID(); delete n.__webhook; }
     });
     const r = await fetch('/rest/workflows', { method: 'POST', credentials: 'include', headers: h,
