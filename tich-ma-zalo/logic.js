@@ -76,12 +76,34 @@ var TM = (function () {
     };
   }
 
+  /**
+   * Phân loại tin (DÙNG CHUNG với zalo-gateway: tichma-snippet.js chép NGUYÊN hàm này – sửa thì sửa cả hai).
+   * 1) Tin BẮT ĐẦU bằng từ khóa (như cũ).
+   * 2) (11/11) Tin NGẮN (≤ 30 ký tự sau khi bỏ dấu) CÓ CHỨA "tich ma|tich diem|doi qua|ma cua toi" ở bất kỳ đâu,
+   *    trừ tin có mã món (M14, m 14) hoặc số điện thoại (≥ 9 chữ số) → các tin đó luôn về bot bán hàng.
+   * Trả 'tich_ma' | 'doi_qua' | 'xem_ma' | null.
+   */
+  function phanLoai(text) {
+    var t = boDau(text);
+    if (!t) return null;
+    if (/^(doi qua|doi ma|nhan qua)( |$)/.test(t)) return 'doi_qua';
+    if (/^(ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(t)) return 'xem_ma';
+    if (/^(tich ma|tich diem)( |$)/.test(t)) return 'tich_ma';
+    if (t.length > 30 || /(^| )m ?\d{1,2}( |$)/.test(t) || t.replace(/\D/g, '').length >= 9) return null;
+    var tot = null, viTri = 999;
+    [['doi_qua', /(^| )doi qua( |$)/], ['xem_ma', /(^| )ma cua toi( |$)/], ['tich_ma', /(^| )tich (ma|diem)( |$)/]].forEach(function (k) {
+      var m = k[1].exec(t);
+      if (m && m.index < viTri) { viTri = m.index; tot = k[0]; }
+    });
+    return tot;
+  }
+
   /** Phân loại tin khách nhắn riêng cho bot. Trả 'tich_ma' | 'doi_qua' | 'xem_ma' | null. */
   function loaiTin(text, cfg) {
     var t = boDau(text);
     if (!t) return null;
-    if (/^(doi qua|doi ma|nhan qua)\b/.test(t)) return 'doi_qua';
-    if (/^(ma cua toi|xem ma|kiem tra ma|so ma)\b/.test(t)) return 'xem_ma';
+    var p = phanLoai(text);
+    if (p) return p;
     for (var i = 0; i < cfg.tu_khoa.length; i++) {
       var k = cfg.tu_khoa[i];
       if (t === k || t.indexOf(k + ' ') === 0) return 'tich_ma';
@@ -146,8 +168,14 @@ var TM = (function () {
       out.ghi.push({ tab: 'doi_qua', kieu: 'them', dong: { ma_doi_qua: maQua, zalo_id: uid, ten_zalo: ten, thoi_gian: g.sheet,
         ma_da_dung: dung.map(function (r) { return r.ma; }).join(', '), gia_tri_giam: cfg.gia_tri_giam } });
       var conLai = con.length - cfg.so_ma_doi;
-      out.tin.push(tinUser(evt.threadId, '✅ QUÀ HỢP LỆ ✅\n🎁 ' + cfg.qua_tang + '\n👤 ' + ten + '\n🕒 ' + g.hien + '\n🔖 Mã quà: ' + maQua +
-        '\n\nAnh/chị đưa màn hình này cho quán giúp em nhé. Còn lại ' + conLai + '/' + cfg.so_ma_doi + ' mã. Cảm ơn anh/chị đã ủng hộ ' + cfg.ten_quan + '! ❤️'));
+      // (11/11) Quán chỉ tin TIN CHÚC MỪNG MỚI của bot trong NHÓM KHÁCH (không tin màn hình khách → tin cũ/ảnh chụp vô dụng).
+      if (cfg.nhom_khach_id) {
+        var tagQ = '@' + ten;
+        var chuc = '🎉 Chúc mừng ' + tagQ + ' đã đổi quà: ' + cfg.qua_tang + '! (' + g.hien.slice(0, 5) + ') Cảm ơn bạn đã ủng hộ ' + cfg.ten_quan + ' ❤️';
+        out.tin.push({ den: 'group', threadId: cfg.nhom_khach_id, text: chuc, mentions: [{ pos: chuc.indexOf(tagQ), len: tagQ.length, uid: uid }] });
+      }
+      out.tin.push(tinUser(evt.threadId, '✅ ĐỔI QUÀ THÀNH CÔNG\n🎁 ' + cfg.qua_tang + '\n👤 ' + ten + '\n🕒 ' + g.hien + '\n🔖 Mã quà: ' + maQua +
+        '\n\nEm đã báo quán trong nhóm Zalo của quán, quán xác nhận qua tin chúc mừng trong nhóm ạ. Còn lại ' + conLai + '/' + cfg.so_ma_doi + ' mã. Cảm ơn anh/chị đã ủng hộ ' + cfg.ten_quan + '! ❤️'));
       out.ma_qua = maQua;
       return out;
     }
@@ -253,8 +281,7 @@ var TM = (function () {
     if (!cauHinh || !cauHinh.bat) return false;
     if (su.event === 'message') {
       if (String(su.threadType) !== 'user') return false;
-      var t = boDau(su.text);
-      return /^(tich ma|tich diem|doi qua|doi ma|nhan qua|ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(t);
+      return !!phanLoai(su.text);
     }
     if (su.event === 'reaction') {
       var raw = su.raw || {};
@@ -264,7 +291,7 @@ var TM = (function () {
     return false;
   }
 
-  return { boDau: boDau, vn: vn, docGio: docGio, docCauHinh: docCauHinh, loaiTin: loaiTin, xuLyTinKhach: xuLyTinKhach,
+  return { boDau: boDau, vn: vn, docGio: docGio, docCauHinh: docCauHinh, phanLoai: phanLoai, loaiTin: loaiTin, xuLyTinKhach: xuLyTinKhach,
     ganMsgId: ganMsgId, xuLyThaTim: xuLyThaTim, quetQuaHan: quetQuaHan, nenChuyenTichMa: nenChuyenTichMa };
 })();
 
