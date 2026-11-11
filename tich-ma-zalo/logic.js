@@ -65,7 +65,8 @@ var TM = (function () {
       ten_quan: String(c.ten_quan || 'Quán'),
       so_ma_doi: Math.max(1, so(c.so_ma_doi, 3)),
       bill_toi_thieu: so(c.bill_toi_thieu, 30000),
-      qua_tang: String(c.qua_tang || 'Quà tặng'),
+      // (11/11) {gia_tri} trong qua_tang được thay bằng gia_tri_giam → đổi số tiền chỉ cần sửa 1 ô gia_tri_giam.
+      qua_tang: String(c.qua_tang || 'Quà tặng').replace(/\{gia_tri\}/g, tienVn(so(c.gia_tri_giam, 5000))),
       gia_tri_giam: so(c.gia_tri_giam, 5000),
       han_ma_ngay: so(c.han_ma_ngay, 0),
       han_duyet_phut: Math.max(1, so(c.han_duyet_phut, 30)),
