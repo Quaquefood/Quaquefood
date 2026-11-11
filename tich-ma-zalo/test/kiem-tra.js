@@ -93,7 +93,7 @@ r = khachNhan(db, 'u1', 'Lan', 'mã của tôi', T0 + 3 * NGAY + 5 * PHUT); asse
 
 // 13. Đổi quà: trừ đúng 3 mã cũ nhất, ghi sổ, không đổi lần 2
 r = khachNhan(db, 'u1', 'Lan', 'Đổi quà', T0 + 4 * NGAY);
-assert.match(r.tin[0].text, /QUÀ HỢP LỆ/); assert.match(r.tin[0].text, /Còn lại 0\/3/);
+assert.equal(r.tin[0].den, 'group'); assert.match(r.tin[0].text, /^🎉 Chúc mừng @Lan đã đổi quà/); assert.match(r.tin[1].text, /ĐỔI QUÀ THÀNH CÔNG/); assert.match(r.tin[1].text, /Còn lại 0\/3/);
 assert.equal(db.doi_qua.length, 1); assert.equal(db.doi_qua[0].gia_tri_giam, 5000);
 assert.equal(db.ma_tich.filter(x => x.trang_thai === 'da_doi').length, 3);
 r = khachNhan(db, 'u1', 'Lan', 'đổi quà', T0 + 4 * NGAY + PHUT); assert.match(r.tin[0].text, /0\/3/); assert.equal(db.doi_qua.length, 1);

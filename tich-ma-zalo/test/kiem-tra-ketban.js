@@ -13,7 +13,7 @@ const GW = path.join(__dirname, '..', 'gateway');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gwkb-'));
 const VA_GOC = path.join(tmp, 'ketban-tu-goc.js'), VA_TM = path.join(tmp, 'ketban-tu-tichma.js');
 execFileSync(process.execPath, [path.join(GW, 'va-ketban.js'), path.join(GW, 'goc', 'index.js'), VA_GOC]);
-execFileSync(process.execPath, [path.join(GW, 'va-ketban.js'), path.join(GW, 'index.js'), VA_TM]);
+fs.copyFileSync(path.join(GW, 'index.js'), VA_TM); // 11/11: index.js = tích mã vá lên bản có kết bạn
 
 const mod = (ten, code) => { const d = path.join(tmp, 'node_modules', ten); fs.mkdirSync(d, { recursive: true });
   fs.writeFileSync(path.join(d, 'package.json'), JSON.stringify({ name: ten, type: 'module', main: 'index.js' })); fs.writeFileSync(path.join(d, 'index.js'), code); };
@@ -122,7 +122,11 @@ console.log('OK  /accept-friend, /friend-requests');
 // 5. Áp được lên bản đã vá tích mã (để sau này lắp tích mã không xung đột)
 const tm = fs.readFileSync(VA_TM, 'utf8');
 assert.ok(tm.includes('TICHMA.url(payload, N8N_WEBHOOK_URL)') && tm.includes('KẾT BẠN (thêm'));
-console.log('OK  áp được lên bản gateway đã vá tích mã');
+const cuoi = chay(VA_TM); // bản sẽ triển khai (tích mã + kết bạn), TICHMA_ON không đặt
+const boTs = a => a.map(p => ({ url: p.url, body: Object.assign({}, p.body, { ts: 0 }) })); assert.deepStrictEqual(boTs(cuoi.post), boTs(kb.post)); assert.deepStrictEqual(cuoi.sent, kb.sent);
+['gm', 'gm2', 'gmKhong', 'gmHong', 'ac', 'acHong', 'fr', 'health'].forEach(k => assert.deepStrictEqual(cuoi[k], kb[k], k));
+assert.deepStrictEqual(cuoi.s1.j.results, kb.s1.j.results);
+console.log('OK  bản cuối (tích mã + kết bạn, TICHMA_ON tắt) = bản đang chạy: sự kiện, /send, kết bạn y hệt');
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log('GATEWAY KET BAN: KIỂM TRA OK');

@@ -147,7 +147,7 @@ chay(W1, S, tin('111', 'mã của tôi'), gw);
 assert.ok(/3 mã/.test(gw.gui[gw.gui.length - 1].text));
 chay(W1, S, tin('111', 'Đổi quà'), gw);
 const t7 = gw.gui[gw.gui.length - 1].text;
-assert.ok(/QUÀ HỢP LỆ/.test(t7) && /QUA-[A-Z0-9]{5}/.test(t7));
+assert.ok(/ĐỔI QUÀ THÀNH CÔNG/.test(t7) && /QUA-[A-Z0-9]{5}/.test(t7)); const g7 = gw.gui[gw.gui.length - 2]; assert.ok(g7.threadType === 'group' && /^🎉 Chúc mừng @/.test(g7.text) && g7.mentions && g7.mentions.length === 1, 'tin chúc mừng nhóm có tag');
 assert.strictEqual(S.ma_tich.filter(x => x.zalo_id === '111' && x.trang_thai === 'da_doi').length, 3);
 assert.strictEqual(S.doi_qua.length, 1); assert.strictEqual(S.doi_qua[0].gia_tri_giam, 5000);
 ok('xem mã + đổi quà');

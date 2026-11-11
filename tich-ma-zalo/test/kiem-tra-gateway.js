@@ -21,7 +21,7 @@ const mod = (ten, code) => { const d = path.join(tmp, 'node_modules', ten); fs.m
 mod('express', `export default function express(){ const app={ routes:{}, use(){}, get(p,...h){app.routes['GET '+p]=h[h.length-1]}, post(p,...h){app.routes['POST '+p]=h[h.length-1]}, listen(){ globalThis.__APP=app } }; return app; }
 express.json=()=>null; express.raw=()=>null;`);
 mod('image-size', 'export default function(){ return {width:1,height:1} }');
-mod('zca-js', `export const ThreadType={User:0,Group:1}; export const LoginQRCallbackEventType={};
+mod('zca-js', `export const ThreadType={User:0,Group:1}; export const LoginQRCallbackEventType={}; export const FriendEventType={REQUEST:2};
 export class Zalo{ async login(){ const h={}; let n=0; const api={ listener:{ on(e,f){h[e]=f}, start(){ globalThis.__L=h } },
   async sendMessage(c,t,ty){ globalThis.__SENT.push({c,t,ty}); return {message:{msgId:900+(++n)},attachment:[]} } }; return api; } }`);
 fs.writeFileSync(path.join(tmp, 'package.json'), JSON.stringify({ type: 'module' }));
@@ -31,7 +31,7 @@ const KICH_BAN = `
 globalThis.__SENT=[]; globalThis.__POST=[];
 globalThis.fetch=async(url,o)=>{ globalThis.__POST.push({url, body:JSON.parse(o.body)}); return {ok:true,status:200} };
 setInterval=()=>0;
-await import(process.env.GW_FILE);
+await import('./gw.mjs');
 for (let i=0;i<50 && !globalThis.__L;i++) await new Promise(r=>setTimeout(r,10));
 const L=globalThis.__L, app=globalThis.__APP, out={};
 const tin=(text,type,id)=>L.message({ isSelf:false, threadId:'111', type: type==='group'?1:0, data:{ msgId:id, uidFrom:'111', dName:'Lan', content:text, ts:1 } });
@@ -59,7 +59,7 @@ function chay(file, env) {
 const BAT = { TICHMA_ON: '1', TICHMA_GROUP: NHOM, TICHMA_APPROVERS: CHU + ',' + NV };
 
 // 1. Bản gốc vs bản vá khi TICHMA_ON không đặt / =0 / =1 nhưng thiếu cấu hình: y hệt
-const goc = chay(path.join(GW, 'goc', 'index.js'), {});
+const goc = chay(path.join(GW, 'index-ketban-dang-chay.js'), {}); // 11/11: so với bản ĐANG CHẠY (có kết bạn)
 [{}, { TICHMA_ON: '0' }, Object.assign({}, BAT, { TICHMA_ON: '0' })].forEach(env => {
   const vá = chay(path.join(GW, 'index.js'), env);
   assert.deepStrictEqual(vá.post, goc.post, 'đường đi phải y hệt bản gốc');
