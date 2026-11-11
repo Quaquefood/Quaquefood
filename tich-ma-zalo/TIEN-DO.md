@@ -1,5 +1,14 @@
 # Tích mã – tiến độ lắp đặt
 
+## ✅ 11/11/2026 – ĐÃ BẬT, CHẠY THẬT (đọc mục này trước)
+- 15:01–15:08: sửa `logic.js` (TM.phanLoai: câu nói vòng; đổi quà hợp lệ → chúc mừng nhóm khách có tag, không hợp lệ → chỉ nhắn riêng), build, PATCH node "Xu ly" của `iMSooaBPyj7B9XS2` (commit 9bf7727). Test máy: logic 18/18, n8n 12/12, phân loại (93 câu mục 8 skill không câu nào sang tích mã), gateway, kết bạn: OK. n8n thật: 7/7 + đổi quà OK, đã xóa dòng test-.
+- 15:12: lắp gateway tích mã (index.js = bản kết bạn + tích mã, TICHMA_ON tắt). Sao lưu `zalo-gateway/index.js.bak-tichma-20261111-0812`. Thử thật Zalo: hi → menu, đặt đơn → thả tim → nhóm CSKH nhận: OK.
+- ~15:22: BẬT. Sheet `bat_chuc_nang=BAT`; file mới `/opt/zalo-n8n-stack/docker-compose.override.yml` (TICHMA_ON=1, nhóm, 3 người duyệt); build image (zca-js vẫn 2.2.0, image cũ sao lưu `zalo-gw-backup:truoc-tichma`). Log `[tichma] BẬT: nhóm 5606409292553201202, 3 người duyệt`.
+- 15:23–15:26 thử thật: "Hiệp Assistant" nhắn "Tích mã" → tin nhóm có tag, msgId 8476651593695 ghi yeu_cau → Trần Đại Hiệp thả ❤️ → khách nhận M-EVCGF 1/3; "Mã của tôi" → 1/3; "Hi" và đặt món xen giữa vẫn về bot bán hàng. Dữ liệu thử thật này còn trong Sheet.
+- TẮT: Sheet TAT, hoặc gateway `cd /opt/zalo-n8n-stack && rm docker-compose.override.yml && docker compose up -d zalo-gateway`.
+- Còn treo: thử đổi quà qua Zalo thật; dọn dữ liệu Hiệp Assistant (nếu muốn); các điểm chủ quán chưa chốt (mọi cảm xúc đều duyệt; không bắt vào nhóm; mã không hạn); đổi tên/tag workflow. Không chạy bộ 108 bước (gửi thẳng n8n, không qua gateway) – thay bằng thử thật qua Zalo.
+- Chi tiết vận hành: skill bot-zalo-nhi-nhi mục 00a.B, zalo-gateway, 8b.
+
 Cập nhật 10/11/2026 (chiều, phiên có trình duyệt). Làm theo `KE-HOACH.md`.
 
 ## ▶ PHIÊN 10/11 CHIỀU – ĐÃ LÀM (đọc mục này trước)
