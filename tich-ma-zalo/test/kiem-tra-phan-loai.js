@@ -42,7 +42,8 @@ if (fs.existsSync(skill) && fs.statSync(skill).isDirectory()) {
 }
 if (file && fs.existsSync(file)) {
   const md = fs.readFileSync(file, 'utf8');
-  const muc8 = md.slice(md.indexOf('## 8.'));
+  let muc8 = md.slice(md.indexOf('## 8.'));
+  if (muc8.indexOf('### 8b') > 0) muc8 = muc8.slice(0, muc8.indexOf('### 8b')); // 8b = kịch bản tích mã, không phải bot bán hàng
   const cau = [...muc8.matchAll(/"([^"\n]{1,200})"/g)].map(m => m[1].replace(/\\n/g, '\n'))
     .concat([...muc8.matchAll(/'([^'\n]{1,200})'/g)].map(m => m[1]));
   let sai = cau.filter(c => TM.phanLoai(c) || GW.nenChuyen(tin(c)));
