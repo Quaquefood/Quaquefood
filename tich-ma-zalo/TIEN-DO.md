@@ -8,6 +8,12 @@
 - TẮT: Sheet TAT, hoặc gateway `cd /opt/zalo-n8n-stack && rm docker-compose.override.yml && docker compose up -d zalo-gateway`.
 - Còn treo: thử đổi quà qua Zalo thật; dọn dữ liệu Hiệp Assistant (nếu muốn); các điểm chủ quán chưa chốt (mọi cảm xúc đều duyệt; không bắt vào nhóm; mã không hạn); đổi tên/tag workflow. Không chạy bộ 108 bước (gửi thẳng n8n, không qua gateway) – thay bằng thử thật qua Zalo.
 - Chi tiết vận hành: skill bot-zalo-nhi-nhi mục 00a.B, zalo-gateway, 8b.
+- 15:32–15:40 THỬ TRỌN VẸN qua Zalo thật (khách Hiệp Assistant, người duyệt Trần Đại Hiệp; tạm so_lan_moi_ngay=3): 3 lần tích mã ("tích mã", "cho mình tích mã với", "tích điểm") + 3 ❤️ → M-3ZBMP, M-U7W26, M-AMKHN; ❤️ lại tin cũ → không cấp thêm; "Mã của tôi" → đủ 3; "Muốn đổi quà" → nhóm khách "🎉 Chúc mừng @Hiệp Assistant…" + riêng "ĐỔI QUÀ THÀNH CÔNG QUA-B25K8", 3 mã da_doi; "Đổi quà" lần 2 → chỉ riêng 0/3; "Hi" → menu. TẤT CẢ OK. ~15:45 đã XÓA toàn bộ dữ liệu thử (chủ hệ thống xem rồi đồng ý) → tong_hop = 0.
+- Sau đó, theo yêu cầu chủ hệ thống:
+  - `so_lan_moi_ngay` = **10** (khách mua nhiều lần/ngày phải được cấp mã mỗi lần). Quy tắc: **mỗi lần mua từ 30K = 1 mã, bill lớn hơn vẫn 1 mã** (nhân viên thả tim 1 lần/bill). Code: giá trị nhỏ nhất là 1.
+  - Số tiền quà khai báo ở **1 ô**: `qua_tang` = "Giảm {gia_tri} khi mua Trà tắc hoặc Bánh tráng phơi sương muối sặc túi zip"; `{gia_tri}` được thay bằng `gia_tri_giam` (logic.js docCauHinh, commit 7aab4d0, node "Xu ly" đã PATCH, kiểm trên n8n thật ra "Giảm 5.000đ…"). Nâng giá trị sau này: chỉ sửa ô `gia_tri_giam` (số, vd 10000), có hiệu lực ngay. Không xóa `{gia_tri}`.
+  - `test/kiem-tra-phan-loai.js`: chỉ đọc mục 8 của skill tới trước "### 8b" (8b là kịch bản tích mã).
+- **Trạng thái cuối 11/11:** tích mã ĐANG BẬT cho khách thật; Sheet sạch; 2 workflow active; gateway (kết bạn + tích mã) chạy trên VPS.
 
 Cập nhật 10/11/2026 (chiều, phiên có trình duyệt). Làm theo `KE-HOACH.md`.
 
