@@ -6,7 +6,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const goc = fs.readFileSync(path.join(__dirname, 'goc', 'index.js'), 'utf8');
+// 11/11: áp lên bản ĐANG CHẠY trên VPS (đã có phần kết bạn), không áp lên goc/index.js nữa.
+const goc = fs.readFileSync(path.join(__dirname, process.env.GW_GOC || 'index-ketban-dang-chay.js'), 'utf8');
 const snippet = fs.readFileSync(path.join(__dirname, 'tichma-snippet.js'), 'utf8');
 let s = goc;
 function thay(cu, moi) {

@@ -12,12 +12,27 @@ const TICHMA = (() => {
   };
   const boDau = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  // Giống hệt TM.phanLoai trong tich-ma-zalo/logic.js (11/11: thêm tin ngắn có chứa từ khóa; trừ mã món, SĐT)
+  function phanLoai(text) {
+    const t = boDau(text);
+    if (!t) return null;
+    if (/^(doi qua|doi ma|nhan qua)( |$)/.test(t)) return "doi_qua";
+    if (/^(ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(t)) return "xem_ma";
+    if (/^(tich ma|tich diem)( |$)/.test(t)) return "tich_ma";
+    if (t.length > 30 || /(^| )m ?\d{1,2}( |$)/.test(t) || t.replace(/\D/g, "").length >= 9) return null;
+    let tot = null, viTri = 999;
+    [["doi_qua", /(^| )doi qua( |$)/], ["xem_ma", /(^| )ma cua toi( |$)/], ["tich_ma", /(^| )tich (ma|diem)( |$)/]].forEach((k) => {
+      const m = k[1].exec(t);
+      if (m && m.index < viTri) { viTri = m.index; tot = k[0]; }
+    });
+    return tot;
+  }
   // Giống hệt TM.nenChuyenTichMa trong tich-ma-zalo/logic.js
   function nenChuyen(su) {
     if (!cfg.bat || !su) return false;
     if (su.event === "message") {
       if (String(su.threadType) !== "user") return false;
-      return /^(tich ma|tich diem|doi qua|doi ma|nhan qua|ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(boDau(su.text));
+      return !!phanLoai(su.text);
     }
     if (su.event === "reaction") {
       const raw = su.raw || {};

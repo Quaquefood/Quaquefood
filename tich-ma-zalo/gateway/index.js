@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import sizeOf from "image-size";
-import { Zalo, ThreadType, LoginQRCallbackEventType } from "zca-js";
+import { Zalo, ThreadType, LoginQRCallbackEventType, FriendEventType } from "zca-js";
 
 // zca-js v2 cần hàm đọc kích thước ảnh khi gửi ảnh từ file
 async function imageMetadataGetter(filePath) {
@@ -37,12 +37,27 @@ const TICHMA = (() => {
   };
   const boDau = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  // Giống hệt TM.phanLoai trong tich-ma-zalo/logic.js (11/11: thêm tin ngắn có chứa từ khóa; trừ mã món, SĐT)
+  function phanLoai(text) {
+    const t = boDau(text);
+    if (!t) return null;
+    if (/^(doi qua|doi ma|nhan qua)( |$)/.test(t)) return "doi_qua";
+    if (/^(ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(t)) return "xem_ma";
+    if (/^(tich ma|tich diem)( |$)/.test(t)) return "tich_ma";
+    if (t.length > 30 || /(^| )m ?\d{1,2}( |$)/.test(t) || t.replace(/\D/g, "").length >= 9) return null;
+    let tot = null, viTri = 999;
+    [["doi_qua", /(^| )doi qua( |$)/], ["xem_ma", /(^| )ma cua toi( |$)/], ["tich_ma", /(^| )tich (ma|diem)( |$)/]].forEach((k) => {
+      const m = k[1].exec(t);
+      if (m && m.index < viTri) { viTri = m.index; tot = k[0]; }
+    });
+    return tot;
+  }
   // Giống hệt TM.nenChuyenTichMa trong tich-ma-zalo/logic.js
   function nenChuyen(su) {
     if (!cfg.bat || !su) return false;
     if (su.event === "message") {
       if (String(su.threadType) !== "user") return false;
-      return /^(tich ma|tich diem|doi qua|doi ma|nhan qua|ma cua toi|xem ma|kiem tra ma|so ma)( |$)/.test(boDau(su.text));
+      return !!phanLoai(su.text);
     }
     if (su.event === "reaction") {
       const raw = su.raw || {};
@@ -207,6 +222,22 @@ function startListener() {
     postJson(TICHMA.url(p, N8N_WEBHOOK_URL), p);
   });
 
+  // ---------- KẾT BẠN (thêm 11/2026): chỉ loại REQUEST, chỉ gửi sang webhook ket-ban ----------
+  l.on("friend_event", async (ev) => {
+    try {
+      if (!ev || ev.type !== FriendEventType.REQUEST || ev.isSelf) return;
+      const d = ev.data || {};
+      const fromId = String(d.fromUid || "");
+      if (!fromId) return;
+      const payload = { event: "friend_request", fromId, fromName: await KETBAN.tenNguoi(fromId),
+        message: String(d.message || ""), ts: Date.now(), raw: ev };
+      const ok = await postJson(KETBAN.webhook, payload);
+      console.log(`[ketban] lời mời từ ${fromId} → ${KETBAN.webhook}: ${ok ? "OK" : "LỖI"}`);
+    } catch (e) {
+      console.error("[ketban] lỗi xử lý lời mời:", e?.message || e);
+    }
+  });
+
   l.start({ retryOnClose: true });
 }
 
@@ -273,6 +304,79 @@ app.post("/send-image", auth, express.raw({ type: () => true, limit: "15mb" }), 
     res.status(502).json({ ok: false, error: e.message });
   } finally {
     fs.promises.unlink(tmp).catch(() => {});
+  }
+});
+
+// ---------- KẾT BẠN (thêm 11/2026): /group-members, /accept-friend, /friend-requests ----------
+const KETBAN = {
+  webhook: String(process.env.KETBAN_WEBHOOK_URL || "http://n8n:5678/webhook/ket-ban").trim(),
+  cache: new Map(), // groupId → {t, data}, giữ 2 phút
+  async tenNguoi(uid) {
+    try {
+      const r = await api.getUserInfo(uid);
+      const p = (r && r.changed_profiles) || {};
+      const x = p[uid] || p[uid + "_0"] || Object.values(p)[0] || {};
+      return String(x.displayName || x.zaloName || "");
+    } catch { return ""; }
+  },
+};
+const boVersion = (x) => String(x).replace(/_\d+$/, "");
+
+// GET /group-members?groupId=<id>
+app.get("/group-members", auth, async (req, res) => {
+  const groupId = String(req.query.groupId || "").trim();
+  if (!api) return res.status(503).json({ ok: false, error: "chưa đăng nhập Zalo" });
+  if (!groupId) return res.status(400).json({ ok: false, error: "thiếu groupId" });
+  const c = KETBAN.cache.get(groupId);
+  if (c && Date.now() - c.t < 120_000) return res.json(c.data);
+  try {
+    const r = await api.getGroupInfo(groupId);
+    const g = r && r.gridInfoMap && r.gridInfoMap[groupId];
+    if (!g) return res.status(404).json({ ok: false, error: "không thấy nhóm (bot không ở trong nhóm hoặc sai groupId)" });
+    const ds = new Set();
+    (g.memVerList || []).forEach((x) => x && ds.add(boVersion(x)));
+    (g.memberIds || []).forEach((x) => x && ds.add(boVersion(x)));
+    (g.currentMems || []).forEach((m) => m && m.id && ds.add(boVersion(m.id)));
+    const members = [...ds];
+    const total = Number(g.totalMember) || members.length;
+    // zca-js 2.2.0 không có hàm lấy thành viên theo trang → báo rõ nếu thiếu
+    const data = { ok: true, groupId, name: String(g.name || ""), total, members, complete: members.length >= total };
+    KETBAN.cache.set(groupId, { t: Date.now(), data });
+    res.json(data);
+  } catch (e) {
+    console.error("[group-members] lỗi:", e.message);
+    res.status(502).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /accept-friend  body {userId}
+app.post("/accept-friend", auth, async (req, res) => {
+  const userId = String((req.body || {}).userId || "").trim();
+  if (!api) return res.status(503).json({ ok: false, error: "chưa đăng nhập Zalo" });
+  if (!userId) return res.status(400).json({ ok: false, error: "thiếu userId" });
+  try {
+    await enqueue(() => api.acceptFriendRequest(userId));
+    console.log(`[ketban] đã đồng ý kết bạn ${userId}`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[accept-friend] lỗi:", e.message);
+    res.status(502).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /friend-requests: lời mời đang chờ (để n8n quét lại lời mời bị lỡ)
+app.get("/friend-requests", auth, async (_req, res) => {
+  if (!api) return res.status(503).json({ ok: false, error: "chưa đăng nhập Zalo" });
+  try {
+    const r = await api.getFriendRecommendations();
+    const requests = ((r && r.recommItems) || []).map((it) => (it && it.dataInfo) || {})
+      .filter((d) => Number(d.recommType) === 2 && d.userId)
+      .map((d) => ({ fromId: String(d.userId), fromName: String(d.displayName || d.zaloName || ""),
+        message: String((d.recommInfo && d.recommInfo.message) || ""), ts: Number(d.recommTime) || 0 }));
+    res.json({ ok: true, requests });
+  } catch (e) {
+    console.error("[friend-requests] lỗi:", e.message);
+    res.status(502).json({ ok: false, error: e.message });
   }
 });
 
